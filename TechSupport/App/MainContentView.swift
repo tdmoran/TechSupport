@@ -4,18 +4,23 @@ struct MainContentView: View {
     @State private var selectedTab = Tab.monitor
     @State private var showSettings = false
 
+    @State private var userSettings = UserSettings()
     private let monitorService = SystemMonitorService()
     @State private var monitorViewModel: MonitorViewModel?
     @State private var claudeTabVisited = false
 
+    private var themeManager = ThemeManager.shared
+
     enum Tab: String, CaseIterable {
         case claude = "Claude"
         case monitor = "Monitor"
+        case appNuker = "AppNuker"
 
         var icon: String {
             switch self {
             case .claude: return "terminal"
             case .monitor: return "gauge.medium"
+            case .appNuker: return "trash.circle"
             }
         }
     }
@@ -26,13 +31,20 @@ struct MainContentView: View {
             tabContent
         }
         .background(Theme.Colors.background)
+        .preferredColorScheme(themeManager.preferredColorScheme)
+        .environment(userSettings)
         .sheet(isPresented: $showSettings) {
             SettingsView()
-                .frame(width: 380, height: 280)
+                .environment(userSettings)
+                .frame(width: 380, height: 500)
         }
         .onAppear {
-            monitorService.start()
+            monitorService.start(settings: userSettings)
+            monitorService.notificationManager.requestPermission()
             monitorViewModel = MonitorViewModel(monitorService: monitorService)
+        }
+        .onChange(of: userSettings.refreshInterval) {
+            monitorService.start(settings: userSettings)
         }
     }
 
@@ -141,6 +153,10 @@ struct MainContentView: View {
                     .opacity(selectedTab == .monitor ? 1 : 0)
                     .allowsHitTesting(selectedTab == .monitor)
             }
+
+            AppNukerTabView()
+                .opacity(selectedTab == .appNuker ? 1 : 0)
+                .allowsHitTesting(selectedTab == .appNuker)
         }
         .onChange(of: selectedTab) {
             if selectedTab == .claude {

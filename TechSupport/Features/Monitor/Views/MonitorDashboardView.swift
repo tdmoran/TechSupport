@@ -1,9 +1,12 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct MonitorDashboardView: View {
     @Bindable var viewModel: MonitorViewModel
     @State private var showKillApps = false
     @State private var showBackgroundApps = false
+    @State private var showDiskCleanup = false
+    @State private var isExporting = false
 
     private let columns = [
         GridItem(.flexible(), spacing: Theme.Spacing.medium),
@@ -17,6 +20,7 @@ struct MonitorDashboardView: View {
                 killAppsButton
                 metricsGrid
                 peripheralsCard
+                exportReportButton
                 quickSettings
             }
             .padding(Theme.Spacing.large)
@@ -26,6 +30,10 @@ struct MonitorDashboardView: View {
         .sheet(isPresented: $showKillApps) {
             KillAppsView()
                 .frame(width: 420, height: 500)
+        }
+        .sheet(isPresented: $showDiskCleanup) {
+            CleanupView()
+                .frame(width: 440, height: 520)
         }
     }
 
@@ -130,7 +138,8 @@ struct MonitorDashboardView: View {
                     unit: "%",
                     subtitle: "\(viewModel.metrics.cpuCoreCount) cores",
                     progress: viewModel.metrics.cpuUsage / 100,
-                    statusColor: viewModel.cpuStatusColor
+                    statusColor: viewModel.cpuStatusColor,
+                    sparklineData: viewModel.history.map(\.cpuUsage)
                 )
 
                 MetricCardView(
@@ -140,7 +149,8 @@ struct MonitorDashboardView: View {
                     unit: nil,
                     subtitle: "of \(viewModel.metrics.formattedMemoryTotal)",
                     progress: viewModel.metrics.memoryUsagePercent / 100,
-                    statusColor: viewModel.memoryStatusColor
+                    statusColor: viewModel.memoryStatusColor,
+                    sparklineData: viewModel.history.map(\.memoryUsagePercent)
                 )
 
                 MetricCardView(
@@ -186,6 +196,9 @@ struct MonitorDashboardView: View {
                     progress: nil,
                     statusColor: viewModel.networkHealthStatusColor
                 )
+
+                // Speed Test
+                speedTestCard
 
                 // Running Apps — compact list in a metric-sized card
                 runningAppsCard
@@ -331,6 +344,185 @@ struct MonitorDashboardView: View {
         }
     }
 
+    // MARK: - Speed Test Card
+
+    private var speedTestCard: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.medium) {
+            HStack(spacing: Theme.Spacing.xsmall) {
+                Image(systemName: "speedometer")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Theme.Colors.accent.opacity(0.8))
+                Text("SPEED TEST")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundStyle(Theme.Colors.textSecondary)
+                    .tracking(0.5)
+                Spacer()
+            }
+
+            if viewModel.isRunningSpeedTest {
+                VStack(spacing: Theme.Spacing.medium) {
+                    ProgressView()
+                        .controlSize(.small)
+                        .tint(Theme.Colors.accent)
+                    Text("Testing...")
+                        .font(Theme.Fonts.caption)
+                        .foregroundStyle(Theme.Colors.textSecondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, Theme.Spacing.small)
+            } else if let result = viewModel.speedTestResult {
+                VStack(alignment: .leading, spacing: Theme.Spacing.small) {
+                    HStack(alignment: .firstTextBaseline, spacing: 2) {
+                        Image(systemName: "arrow.down.circle.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(Theme.Colors.statusGreen)
+                        Text(result.formattedDownload)
+                            .font(Theme.Fonts.metricValue)
+                            .foregroundStyle(Theme.Colors.textPrimary)
+                        Text("Mbps")
+                            .font(Theme.Fonts.metricUnit)
+                            .foregroundStyle(Theme.Colors.textSecondary)
+                    }
+
+                    if let _ = result.uploadMbps {
+                        HStack(spacing: 2) {
+                            Image(systemName: "arrow.up.circle.fill")
+                                .font(.system(size: 10))
+                                .foregroundStyle(Theme.Colors.accent)
+                            Text("\(result.formattedUpload) Mbps up")
+                                .font(Theme.Fonts.caption)
+                                .foregroundStyle(Theme.Colors.textSecondary)
+                        }
+                    }
+
+                    Text("Latency: \(result.formattedLatency)")
+                        .font(Theme.Fonts.caption)
+                        .foregroundStyle(Theme.Colors.textTertiary)
+                }
+
+                Button {
+                    viewModel.startSpeedTest()
+                } label: {
+                    Text("Run Again")
+                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Theme.Colors.accent)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, Theme.Spacing.small)
+                        .background(
+                            RoundedRectangle(cornerRadius: Theme.CornerRadius.small)
+                                .fill(Theme.Colors.accentSubtle)
+                        )
+                }
+                .buttonStyle(.plain)
+            } else {
+                Button {
+                    viewModel.startSpeedTest()
+                } label: {
+                    HStack(spacing: Theme.Spacing.xsmall) {
+                        Image(systemName: "play.fill")
+                            .font(.system(size: 10))
+                        Text("Run Speed Test")
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    }
+                    .foregroundStyle(Theme.Colors.accent)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, Theme.Spacing.medium)
+                    .background(
+                        RoundedRectangle(cornerRadius: Theme.CornerRadius.small)
+                            .fill(Theme.Colors.accentSubtle)
+                    )
+                }
+                .buttonStyle(.plain)
+
+                Text("Measure download speed & latency")
+                    .font(Theme.Fonts.caption)
+                    .foregroundStyle(Theme.Colors.textTertiary)
+            }
+        }
+        .cardStyle()
+    }
+
+    // MARK: - Export Report
+
+    private var exportReportButton: some View {
+        Button {
+            exportReport()
+        } label: {
+            HStack(spacing: Theme.Spacing.medium) {
+                if isExporting {
+                    ProgressView()
+                        .controlSize(.small)
+                        .frame(width: 18, height: 18)
+                } else {
+                    Image(systemName: "doc.text")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(Theme.Colors.accent)
+                }
+
+                VStack(alignment: .leading, spacing: Theme.Spacing.xxsmall) {
+                    Text("Export Diagnostic Report")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Theme.Colors.textPrimary)
+                    Text(isExporting ? "Running diagnostics..." : "Save a full system report to a text file")
+                        .font(Theme.Fonts.caption)
+                        .foregroundStyle(Theme.Colors.textSecondary)
+                }
+
+                Spacer()
+
+                Image(systemName: "square.and.arrow.down")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Theme.Colors.textTertiary)
+            }
+            .padding(Theme.Spacing.large)
+            .background(
+                RoundedRectangle(cornerRadius: Theme.CornerRadius.medium)
+                    .fill(Theme.Colors.accent.opacity(0.06))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Theme.CornerRadius.medium)
+                            .strokeBorder(Theme.Colors.accent.opacity(0.15), lineWidth: 1)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(isExporting)
+    }
+
+    private func exportReport() {
+        isExporting = true
+        let metrics = viewModel.monitorService.snapshot()
+
+        Task.detached {
+            let exporter = DiagnosticExporter()
+            let report = await exporter.generateReport(metrics: metrics)
+
+            await MainActor.run {
+                isExporting = false
+                showSavePanel(report: report)
+            }
+        }
+    }
+
+    private func showSavePanel(report: String) {
+        let panel = NSSavePanel()
+        panel.title = "Save Diagnostic Report"
+        panel.nameFieldStringValue = "TechSupport-Report.txt"
+        panel.allowedContentTypes = [.plainText]
+        panel.canCreateDirectories = true
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        do {
+            try report.write(to: url, atomically: true, encoding: .utf8)
+        } catch {
+            let alert = NSAlert()
+            alert.messageText = "Export Failed"
+            alert.informativeText = error.localizedDescription
+            alert.alertStyle = .warning
+            alert.runModal()
+        }
+    }
+
     // MARK: - Quick Settings
 
     private var quickSettings: some View {
@@ -349,6 +541,26 @@ struct MonitorDashboardView: View {
                             .font(.system(size: 16, weight: .medium))
                             .foregroundStyle(Theme.Colors.accent)
                         Text("Activity Monitor")
+                            .font(Theme.Fonts.caption)
+                            .foregroundStyle(Theme.Colors.textSecondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, Theme.Spacing.medium)
+                    .cardStyle(padding: Theme.Spacing.medium)
+                }
+                .buttonStyle(.plain)
+
+                // Disk Cleanup
+                Button {
+                    showDiskCleanup = true
+                } label: {
+                    VStack(spacing: Theme.Spacing.small) {
+                        Image(systemName: "externaldrive.badge.minus")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(Theme.Colors.accent)
+                        Text("Disk Cleanup")
                             .font(Theme.Fonts.caption)
                             .foregroundStyle(Theme.Colors.textSecondary)
                             .lineLimit(1)

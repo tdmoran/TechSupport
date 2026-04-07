@@ -10,6 +10,14 @@ struct ClaudeAPIClient: Sendable {
     private let httpClient: HTTPClient
     private let apiKeyProvider: @Sendable () async -> String?
 
+    private static let maxRetries = 3
+    private static let retryableStatusCodes: Set<Int> = [429, 500, 502, 503, 529]
+    private static let retryableURLErrorCodes: Set<URLError.Code> = [
+        .notConnectedToInternet,
+        .networkConnectionLost,
+        .timedOut,
+    ]
+
     init(
         apiKeyProvider: @escaping @Sendable () async -> String?,
         httpClient: HTTPClient = HTTPClient(),
@@ -18,6 +26,62 @@ struct ClaudeAPIClient: Sendable {
         self.apiKeyProvider = apiKeyProvider
         self.httpClient = httpClient
         self.sseClient = sseClient
+    }
+
+    // MARK: - Retry Logic
+
+    /// Returns the delay in seconds before the next retry, or nil if the error is not retryable.
+    private static func retryDelay(for error: Error, attempt: Int) -> TimeInterval? {
+        guard attempt < maxRetries else { return nil }
+
+        let baseDelay = pow(2.0, Double(attempt)) // 1s, 2s, 4s
+        let jitter = Double.random(in: 0.0...0.5)
+
+        if let appError = error as? AppError {
+            switch appError {
+            case .apiRateLimited(let retryAfterSeconds):
+                return max(Double(retryAfterSeconds), baseDelay) + jitter
+            case .apiServerError(let statusCode, _):
+                return retryableStatusCodes.contains(statusCode) ? baseDelay + jitter : nil
+            case .apiNetworkError:
+                return baseDelay + jitter
+            default:
+                return nil
+            }
+        }
+
+        if let urlError = error as? URLError,
+           retryableURLErrorCodes.contains(urlError.code) {
+            return baseDelay + jitter
+        }
+
+        return nil
+    }
+
+    /// Executes an async operation with automatic retry on transient failures.
+    private func withRetry<T>(
+        operation: @Sendable () async throws -> T
+    ) async throws -> T {
+        for attempt in 0...Self.maxRetries {
+            do {
+                return try await operation()
+            } catch {
+                if Task.isCancelled { throw error }
+
+                guard let delay = Self.retryDelay(for: error, attempt: attempt) else {
+                    throw error
+                }
+
+                logger.warning(
+                    "Retryable error (attempt \(attempt + 1)/\(Self.maxRetries)): \(error.localizedDescription). Retrying in \(String(format: "%.1f", delay))s"
+                )
+
+                try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            }
+        }
+
+        // Unreachable — the last attempt either returns or throws without retry
+        fatalError("withRetry exceeded loop bounds")
     }
 
     // MARK: - Non-Streaming
@@ -39,13 +103,15 @@ struct ClaudeAPIClient: Sendable {
             stream: false
         )
 
-        return try await httpClient.request(
-            url: baseURL.appendingPathComponent("messages"),
-            method: .post,
-            headers: authHeaders(apiKey: apiKey),
-            body: request,
-            responseType: ClaudeResponse.self
-        )
+        return try await withRetry {
+            try await httpClient.request(
+                url: baseURL.appendingPathComponent("messages"),
+                method: .post,
+                headers: authHeaders(apiKey: apiKey),
+                body: request,
+                responseType: ClaudeResponse.self
+            )
+        }
     }
 
     // MARK: - Streaming
@@ -73,12 +139,39 @@ struct ClaudeAPIClient: Sendable {
                     let body = try JSONEncoder().encode(request)
                     logger.debug("Streaming request to model: \(model.rawValue)")
 
-                    let events = sseClient.stream(
-                        url: baseURL.appendingPathComponent("messages"),
-                        method: "POST",
-                        headers: authHeaders(apiKey: apiKey),
-                        body: body
-                    )
+                    // Retry the initial SSE connection on transient failures.
+                    // Once connected and streaming, mid-stream failures are not retried.
+                    let events = try await withRetry { () -> AsyncThrowingStream<SSEEvent, Error> in
+                        let stream = sseClient.stream(
+                            url: baseURL.appendingPathComponent("messages"),
+                            method: "POST",
+                            headers: authHeaders(apiKey: apiKey),
+                            body: body
+                        )
+                        // Attempt to read the first event to verify the connection succeeds.
+                        // If the connection fails (e.g. 429, 503), the error surfaces here
+                        // so the retry loop can catch it.
+                        var iterator = stream.makeAsyncIterator()
+                        let firstEvent = try await iterator.next()
+
+                        // Rebuild the stream: yield the first event, then the rest
+                        return AsyncThrowingStream { innerContinuation in
+                            Task {
+                                do {
+                                    if let first = firstEvent {
+                                        innerContinuation.yield(first)
+                                    }
+                                    while let event = try await iterator.next() {
+                                        if Task.isCancelled { break }
+                                        innerContinuation.yield(event)
+                                    }
+                                    innerContinuation.finish()
+                                } catch {
+                                    innerContinuation.finish(throwing: error)
+                                }
+                            }
+                        }
+                    }
 
                     for try await event in events {
                         if Task.isCancelled { break }

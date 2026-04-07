@@ -1,6 +1,6 @@
 import Foundation
 
-struct ChatSession: Identifiable, Sendable {
+struct ChatSession: Identifiable, Sendable, Codable {
     let id: UUID
     let messages: [ChatMessage]
     let createdAt: Date
@@ -30,6 +30,18 @@ struct ChatSession: Identifiable, Sendable {
     func truncatedToLast(_ count: Int) -> ChatSession {
         let kept = Array(messages.suffix(count))
         return ChatSession(id: id, messages: kept, createdAt: createdAt)
+    }
+
+    var title: String {
+        guard let first = messages.first(where: { $0.role == .user }) else {
+            return "New Chat"
+        }
+        let preview = first.content.prefix(50)
+        return preview.count < first.content.count ? "\(preview)..." : String(preview)
+    }
+
+    var lastModified: Date {
+        messages.last?.timestamp ?? createdAt
     }
 
     var claudeMessages: [ClaudeMessage] {

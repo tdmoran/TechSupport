@@ -3,6 +3,8 @@ import SwiftTerm
 
 struct ClaudeTerminalView: View {
     @State private var coordinator = TerminalCoordinator()
+    @State private var claudeStatus = ClaudeAuthStatus.checking
+    @State private var isInstalledOnSystem = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -10,13 +12,51 @@ struct ClaudeTerminalView: View {
             HStack(spacing: Theme.Spacing.medium) {
                 HStack(spacing: Theme.Spacing.xsmall) {
                     Circle()
-                        .fill(Theme.Colors.statusGreen)
+                        .fill(claudeStatus.isLoggedIn ? Theme.Colors.statusGreen : Theme.Colors.statusRed)
                         .frame(width: 7, height: 7)
                     Text("Claude Code")
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .foregroundStyle(Theme.Colors.textPrimary)
                 }
+
+                if case .loggedIn(let email) = claudeStatus {
+                    Text(email)
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .foregroundStyle(Theme.Colors.textTertiary)
+                }
+
                 Spacer()
+
+                if !isInstalledOnSystem {
+                    Link(destination: URL(string: "https://docs.anthropic.com/en/docs/claude-code/getting-started")!) {
+                        HStack(spacing: Theme.Spacing.xsmall) {
+                            Image(systemName: "arrow.down.circle")
+                                .font(.system(size: 10, weight: .semibold))
+                            Text("Install Claude Code")
+                                .font(.system(size: 10, weight: .semibold))
+                        }
+                        .foregroundStyle(Theme.Colors.accent)
+                    }
+                } else if claudeStatus == .notLoggedIn {
+                    Button {
+                        coordinator.sendLoginCommand()
+                    } label: {
+                        HStack(spacing: Theme.Spacing.xsmall) {
+                            Image(systemName: "person.badge.key")
+                                .font(.system(size: 10, weight: .semibold))
+                            Text("Sign In")
+                                .font(.system(size: 10, weight: .semibold))
+                        }
+                        .foregroundStyle(Theme.Colors.accent)
+                        .padding(.horizontal, Theme.Spacing.medium)
+                        .padding(.vertical, Theme.Spacing.xsmall)
+                        .background(
+                            Theme.Colors.accentSubtle,
+                            in: RoundedRectangle(cornerRadius: Theme.CornerRadius.small)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
             }
             .padding(.horizontal, Theme.Spacing.large)
             .padding(.vertical, Theme.Spacing.medium)
@@ -63,6 +103,78 @@ struct ClaudeTerminalView: View {
             .padding(.horizontal, Theme.Spacing.large)
             .padding(.vertical, Theme.Spacing.medium)
         }
+        .onAppear {
+            checkClaudeStatus()
+        }
+    }
+
+    private func checkClaudeStatus() {
+        let path = TerminalCoordinator.claudePath
+        isInstalledOnSystem = FileManager.default.isExecutableFile(atPath: path) || path == "claude"
+
+        // Check if claude is actually reachable
+        if !isInstalledOnSystem {
+            // Try which claude
+            let whichProcess = Process()
+            let whichPipe = Pipe()
+            whichProcess.executableURL = URL(fileURLWithPath: "/bin/zsh")
+            whichProcess.arguments = ["-l", "-c", "which claude 2>/dev/null"]
+            whichProcess.standardOutput = whichPipe
+            whichProcess.standardError = whichPipe
+            try? whichProcess.run()
+            whichProcess.waitUntilExit()
+            let whichData = whichPipe.fileHandleForReading.readDataToEndOfFile()
+            let whichResult = String(data: whichData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            isInstalledOnSystem = !whichResult.isEmpty && whichProcess.terminationStatus == 0
+        }
+
+        guard isInstalledOnSystem else {
+            claudeStatus = .notInstalled
+            return
+        }
+
+        Task.detached {
+            let process = Process()
+            let pipe = Pipe()
+            process.executableURL = URL(fileURLWithPath: "/bin/zsh")
+            process.arguments = ["-l", "-c", "\(TerminalCoordinator.claudePath) auth status 2>&1"]
+            process.standardOutput = pipe
+            process.standardError = pipe
+            try? process.run()
+            process.waitUntilExit()
+
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            let output = String(data: data, encoding: .utf8) ?? ""
+
+            await MainActor.run {
+                if output.contains("\"loggedIn\": true") || output.contains("\"loggedIn\":true") {
+                    // Extract email
+                    if let emailRange = output.range(of: "\"email\": \""),
+                       let endRange = output[emailRange.upperBound...].range(of: "\"") {
+                        let email = String(output[emailRange.upperBound..<endRange.lowerBound])
+                        claudeStatus = .loggedIn(email: email)
+                    } else {
+                        claudeStatus = .loggedIn(email: "")
+                    }
+                } else {
+                    claudeStatus = .notLoggedIn
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Auth Status
+
+enum ClaudeAuthStatus: Equatable {
+    case checking
+    case notInstalled
+    case notLoggedIn
+    case loggedIn(email: String)
+
+    var isLoggedIn: Bool {
+        if case .loggedIn = self { return true }
+        return false
     }
 }
 
@@ -94,6 +206,15 @@ class TerminalCoordinator: NSObject, LocalProcessTerminalViewDelegate {
         guard let tv = terminalView else { return }
         tv.send(txt: Self.analysePrompt)
         tv.send(txt: "\r")
+    }
+
+    func sendLoginCommand() {
+        guard let tv = terminalView else { return }
+        // Send Ctrl+C first to interrupt any running process, then login
+        tv.send(txt: "\u{0003}")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            tv.send(txt: "/login\r")
+        }
     }
 
     func sizeChanged(source: LocalProcessTerminalView, newCols: Int, newRows: Int) {}

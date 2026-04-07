@@ -8,6 +8,7 @@ struct MetricCardView: View {
     let subtitle: String
     let progress: Double?
     let statusColor: MonitorViewModel.StatusColor
+    var sparklineData: [Double]? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.medium) {
@@ -58,6 +59,11 @@ struct MetricCardView: View {
                     }
                 }
                 .frame(height: 4)
+            }
+
+            // Sparkline
+            if let sparklineData, sparklineData.count >= 2 {
+                SparklineView(dataPoints: sparklineData)
             }
         }
         .cardStyle()

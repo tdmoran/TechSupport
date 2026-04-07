@@ -21,11 +21,13 @@ final class SystemMonitorService {
     private let wifiMonitor = WiFiMonitor()
     private let healthMonitor = NetworkHealthMonitor()
     private var peripheralWatcher: PeripheralWatcher?
+    let notificationManager = NotificationManager()
 
     private var timer: Timer?
     private var healthTimer: Timer?
     private let macOSVersion: String
     private let hardwareModel: String
+    private var userSettings: UserSettings?
 
     init() {
         macOSVersion = ProcessInfo.processInfo.operatingSystemVersionString
@@ -33,10 +35,12 @@ final class SystemMonitorService {
         refresh()
     }
 
-    func start() {
+    func start(settings: UserSettings? = nil) {
+        self.userSettings = settings
+        let interval = TimeInterval(settings?.refreshInterval ?? Int(AppConstants.monitorRefreshInterval))
         timer?.invalidate()
         timer = Timer.scheduledTimer(
-            withTimeInterval: AppConstants.monitorRefreshInterval,
+            withTimeInterval: interval,
             repeats: true
         ) { [weak self] _ in
             Task { @MainActor in
@@ -108,9 +112,11 @@ final class SystemMonitorService {
         )
 
         currentMetrics = metrics
+        notificationManager.evaluate(metrics)
 
         metricsHistory.append(metrics)
-        if metricsHistory.count > AppConstants.metricsHistoryCount {
+        let maxHistory = userSettings?.historySize ?? AppConstants.metricsHistoryCount
+        if metricsHistory.count > maxHistory {
             metricsHistory.removeFirst()
         }
     }

@@ -45,6 +45,13 @@ struct SSEClient: Sendable {
                         for try await line in bytes.lines {
                             body += line
                         }
+
+                        if httpResponse.statusCode == 429 {
+                            let retryAfter = httpResponse.value(forHTTPHeaderField: "retry-after")
+                                .flatMap(Int.init) ?? 30
+                            throw AppError.apiRateLimited(retryAfterSeconds: retryAfter)
+                        }
+
                         throw AppError.apiServerError(
                             statusCode: httpResponse.statusCode,
                             message: body

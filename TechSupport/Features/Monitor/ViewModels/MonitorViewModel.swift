@@ -5,6 +5,12 @@ import AppKit
 @MainActor
 final class MonitorViewModel {
     let monitorService: SystemMonitorService
+    private let speedTestService = SpeedTestService()
+
+    // Speed test state
+    private(set) var speedTestResult: SpeedTestResult?
+    private(set) var isRunningSpeedTest = false
+    private var speedTestTask: Task<Void, Never>?
 
     init(monitorService: SystemMonitorService) {
         self.monitorService = monitorService
@@ -78,6 +84,33 @@ final class MonitorViewModel {
     func forceQuitApp(named name: String) {
         guard let app = NSWorkspace.shared.runningApplications.first(where: { $0.localizedName == name }) else { return }
         app.forceTerminate()
+    }
+
+    // MARK: - Speed Test
+
+    func startSpeedTest() {
+        guard !isRunningSpeedTest else { return }
+        speedTestTask?.cancel()
+        isRunningSpeedTest = true
+
+        speedTestTask = Task {
+            do {
+                let result = try await speedTestService.run()
+                self.speedTestResult = result
+            } catch is CancellationError {
+                // Cancelled — leave previous result in place
+            } catch {
+                // Failed — clear result
+                self.speedTestResult = nil
+            }
+            self.isRunningSpeedTest = false
+        }
+    }
+
+    func cancelSpeedTest() {
+        speedTestTask?.cancel()
+        speedTestTask = nil
+        isRunningSpeedTest = false
     }
 
     enum StatusColor {

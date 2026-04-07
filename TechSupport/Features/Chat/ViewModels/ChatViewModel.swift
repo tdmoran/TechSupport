@@ -10,17 +10,25 @@ final class ChatViewModel {
     var inputText = ""
     private(set) var isStreaming = false
     private(set) var error: AppError?
-    var selectedModel: ClaudeModel = AppConstants.defaultModel
+    var selectedModel: ClaudeModel
 
     private let claudeClient: ClaudeAPIClient
     private let monitorService: SystemMonitorService
     private let promptBuilder = SystemPromptBuilder()
     private let diagnosticRunner = DiagnosticRunner()
+    let historyStore = ChatHistoryStore()
     private(set) var diagnosticResults: [DiagnosticResult] = []
+    private let userSettings: UserSettings?
 
-    init(claudeClient: ClaudeAPIClient, monitorService: SystemMonitorService) {
+    init(claudeClient: ClaudeAPIClient, monitorService: SystemMonitorService, settings: UserSettings? = nil) {
         self.claudeClient = claudeClient
         self.monitorService = monitorService
+        self.userSettings = settings
+        self.selectedModel = settings?.preferredModel ?? AppConstants.defaultModel
+
+        if let lastSession = historyStore.loadMostRecent() {
+            session = lastSession
+        }
     }
 
     func send() async {
@@ -39,7 +47,8 @@ final class ChatViewModel {
             diagnosticResults: diagnosticResults.isEmpty ? nil : diagnosticResults
         )
 
-        let truncated = session.truncatedToLast(AppConstants.maxChatHistory)
+        let maxHistory = userSettings?.historySize ?? AppConstants.maxChatHistory
+        let truncated = session.truncatedToLast(maxHistory)
         let claudeMessages = truncated.claudeMessages
 
         isStreaming = true
@@ -89,6 +98,7 @@ final class ChatViewModel {
         }
 
         isStreaming = false
+        historyStore.save(session)
     }
 
     func runDiagnostics(category: DiagnosticCategory) async {
@@ -107,6 +117,26 @@ final class ChatViewModel {
         session = ChatSession()
         diagnosticResults = []
         error = nil
+    }
+
+    func newSession() {
+        session = ChatSession()
+        diagnosticResults = []
+        error = nil
+    }
+
+    func loadSession(id: UUID) {
+        guard let loaded = historyStore.load(id: id) else { return }
+        session = loaded
+        diagnosticResults = []
+        error = nil
+    }
+
+    func deleteSession(id: UUID) {
+        historyStore.delete(id: id)
+        if session.id == id {
+            newSession()
+        }
     }
 
     func clearError() {

@@ -1,6 +1,6 @@
 import Foundation
 
-enum MemoryPressure: String, Sendable {
+enum MemoryPressure: String, Sendable, Codable {
     case nominal
     case warning
     case critical
@@ -14,8 +14,8 @@ enum MemoryPressure: String, Sendable {
     }
 }
 
-struct SystemMetrics: Sendable, Identifiable {
-    let id = UUID()
+struct SystemMetrics: Sendable, Identifiable, Codable {
+    let id: UUID
     let cpuUsage: Double
     let cpuCoreCount: Int
     let memoryUsed: UInt64
@@ -31,6 +31,42 @@ struct SystemMetrics: Sendable, Identifiable {
     let macOSVersion: String
     let hardwareModel: String
     let timestamp: Date
+
+    init(
+        id: UUID = UUID(),
+        cpuUsage: Double,
+        cpuCoreCount: Int,
+        memoryUsed: UInt64,
+        memoryTotal: UInt64,
+        memoryPressure: MemoryPressure,
+        diskUsed: UInt64,
+        diskTotal: UInt64,
+        networkBytesSent: UInt64,
+        networkBytesReceived: UInt64,
+        batteryLevel: Double?,
+        batteryIsCharging: Bool?,
+        uptimeSeconds: TimeInterval,
+        macOSVersion: String,
+        hardwareModel: String,
+        timestamp: Date
+    ) {
+        self.id = id
+        self.cpuUsage = cpuUsage
+        self.cpuCoreCount = cpuCoreCount
+        self.memoryUsed = memoryUsed
+        self.memoryTotal = memoryTotal
+        self.memoryPressure = memoryPressure
+        self.diskUsed = diskUsed
+        self.diskTotal = diskTotal
+        self.networkBytesSent = networkBytesSent
+        self.networkBytesReceived = networkBytesReceived
+        self.batteryLevel = batteryLevel
+        self.batteryIsCharging = batteryIsCharging
+        self.uptimeSeconds = uptimeSeconds
+        self.macOSVersion = macOSVersion
+        self.hardwareModel = hardwareModel
+        self.timestamp = timestamp
+    }
 
     var memoryUsagePercent: Double {
         guard memoryTotal > 0 else { return 0 }

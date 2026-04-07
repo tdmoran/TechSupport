@@ -3,6 +3,7 @@ import SwiftUI
 struct ChatView: View {
     @Bindable var viewModel: ChatViewModel
     @State private var showDiagnosticPicker = false
+    @State private var showHistory = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -27,6 +28,16 @@ struct ChatView: View {
             Spacer()
 
             Button {
+                showHistory = true
+            } label: {
+                Image(systemName: "clock.arrow.circlepath")
+            }
+            .help("Chat History")
+            .popover(isPresented: $showHistory) {
+                historyPopover
+            }
+
+            Button {
                 showDiagnosticPicker = true
             } label: {
                 Image(systemName: "stethoscope")
@@ -35,6 +46,13 @@ struct ChatView: View {
             .popover(isPresented: $showDiagnosticPicker) {
                 diagnosticPicker
             }
+
+            Button {
+                viewModel.newSession()
+            } label: {
+                Image(systemName: "square.and.pencil")
+            }
+            .help("New Chat")
 
             Button {
                 viewModel.clearSession()
@@ -155,6 +173,70 @@ struct ChatView: View {
             }
             .padding(Theme.Spacing.large)
         }
+    }
+
+    private var historyPopover: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.medium) {
+            Text("Chat History")
+                .font(Theme.Fonts.title)
+                .padding(.bottom, Theme.Spacing.small)
+
+            if viewModel.historyStore.sessionList.isEmpty {
+                Text("No past sessions")
+                    .font(Theme.Fonts.body)
+                    .foregroundStyle(Theme.Colors.textSecondary)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: Theme.Spacing.xsmall) {
+                        ForEach(viewModel.historyStore.sessionList) { summary in
+                            HStack {
+                                Button {
+                                    viewModel.loadSession(id: summary.id)
+                                    showHistory = false
+                                } label: {
+                                    VStack(alignment: .leading, spacing: Theme.Spacing.xxsmall) {
+                                        Text(summary.title)
+                                            .font(Theme.Fonts.body)
+                                            .foregroundStyle(
+                                                summary.id == viewModel.session.id
+                                                    ? Theme.Colors.accent
+                                                    : Theme.Colors.textPrimary
+                                            )
+                                            .lineLimit(1)
+                                        Text("\(summary.messageCount) messages - \(summary.lastModified.formatted(.relative(presentation: .named)))")
+                                            .font(Theme.Fonts.caption)
+                                            .foregroundStyle(Theme.Colors.textSecondary)
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+
+                                Button {
+                                    viewModel.deleteSession(id: summary.id)
+                                } label: {
+                                    Image(systemName: "xmark.circle")
+                                        .foregroundStyle(Theme.Colors.textTertiary)
+                                }
+                                .buttonStyle(.plain)
+                                .help("Delete")
+                            }
+                            .padding(.vertical, Theme.Spacing.xsmall)
+                            .padding(.horizontal, Theme.Spacing.small)
+                            .background(
+                                summary.id == viewModel.session.id
+                                    ? Theme.Colors.accentSubtle
+                                    : Color.clear,
+                                in: RoundedRectangle(cornerRadius: Theme.CornerRadius.small)
+                            )
+                        }
+                    }
+                }
+                .frame(maxHeight: 300)
+            }
+        }
+        .padding(Theme.Spacing.large)
+        .frame(width: 280)
     }
 
     private var diagnosticPicker: some View {

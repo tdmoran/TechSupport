@@ -52,6 +52,26 @@
 		EEAB549B87B12F799BD4E325 /* ClaudeModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7738E51D24939F0FFAC7D11B /* ClaudeModels.swift */; };
 		F0FF3C6CE2D8C1F4DFB4F156 /* AppConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57CFBF16913747EB863DA535 /* AppConstants.swift */; };
 		FC53F55106CFC57255330A22 /* TechSupportWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A3DA2BD487267D44F3CC270 /* TechSupportWidget.swift */; };
+		AA0000010000000000000001 /* LaunchAtLoginManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000001 /* LaunchAtLoginManager.swift */; };
+		AA0000010000000000000002 /* UserSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000002 /* UserSettings.swift */; };
+		AA0000010000000000000003 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000003 /* NotificationManager.swift */; };
+		AA0000010000000000000004 /* ChatHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000004 /* ChatHistoryStore.swift */; };
+		AA0000010000000000000005 /* SparklineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000005 /* SparklineView.swift */; };
+		AA0000010000000000000006 /* DiagnosticExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000006 /* DiagnosticExporter.swift */; };
+		AA0000010000000000000007 /* SpeedTestService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000007 /* SpeedTestService.swift */; };
+		AA0000010000000000000008 /* DiskCleanupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000008 /* DiskCleanupService.swift */; };
+		AA0000010000000000000009 /* CleanupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000009 /* CleanupView.swift */; };
+		BB0000010000000000000001 /* AppInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0000020000000000000001 /* AppInfo.swift */; };
+		BB0000010000000000000002 /* FoundFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0000020000000000000002 /* FoundFile.swift */; };
+		BB0000010000000000000003 /* AppScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0000020000000000000003 /* AppScanner.swift */; };
+		BB0000010000000000000004 /* FileRemover.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0000020000000000000004 /* FileRemover.swift */; };
+		BB0000010000000000000005 /* AppnukerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0000020000000000000005 /* AppnukerViewModel.swift */; };
+		BB0000010000000000000006 /* AppNukerContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0000020000000000000006 /* AppNukerContentView.swift */; };
+		BB0000010000000000000007 /* DetailPaneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0000020000000000000007 /* DetailPaneView.swift */; };
+		BB0000010000000000000008 /* DoneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0000020000000000000008 /* DoneView.swift */; };
+		BB0000010000000000000009 /* DropZoneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0000020000000000000009 /* DropZoneView.swift */; };
+		BB000001000000000000000A /* FileListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000002000000000000000A /* FileListView.swift */; };
+		BB000001000000000000000B /* ResultsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000002000000000000000B /* ResultsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -134,6 +154,26 @@
 		F19E4A065F9AF48721F1EDFF /* TechSupportApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TechSupportApp.swift; sourceTree = "<group>"; };
 		F3CD7F30F0034E03137D4794 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
 		F49DEAC725372FC803087F77 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
+		AA0000020000000000000001 /* LaunchAtLoginManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLoginManager.swift; sourceTree = "<group>"; };
+		AA0000020000000000000002 /* UserSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSettings.swift; sourceTree = "<group>"; };
+		AA0000020000000000000003 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
+		AA0000020000000000000004 /* ChatHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHistoryStore.swift; sourceTree = "<group>"; };
+		AA0000020000000000000005 /* SparklineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparklineView.swift; sourceTree = "<group>"; };
+		AA0000020000000000000006 /* DiagnosticExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticExporter.swift; sourceTree = "<group>"; };
+		AA0000020000000000000007 /* SpeedTestService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeedTestService.swift; sourceTree = "<group>"; };
+		AA0000020000000000000008 /* DiskCleanupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskCleanupService.swift; sourceTree = "<group>"; };
+		AA0000020000000000000009 /* CleanupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupView.swift; sourceTree = "<group>"; };
+		BB0000020000000000000001 /* AppInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppInfo.swift; sourceTree = "<group>"; };
+		BB0000020000000000000002 /* FoundFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoundFile.swift; sourceTree = "<group>"; };
+		BB0000020000000000000003 /* AppScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppScanner.swift; sourceTree = "<group>"; };
+		BB0000020000000000000004 /* FileRemover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileRemover.swift; sourceTree = "<group>"; };
+		BB0000020000000000000005 /* AppnukerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppnukerViewModel.swift; sourceTree = "<group>"; };
+		BB0000020000000000000006 /* AppNukerContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNukerContentView.swift; sourceTree = "<group>"; };
+		BB0000020000000000000007 /* DetailPaneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailPaneView.swift; sourceTree = "<group>"; };
+		BB0000020000000000000008 /* DoneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoneView.swift; sourceTree = "<group>"; };
+		BB0000020000000000000009 /* DropZoneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DropZoneView.swift; sourceTree = "<group>"; };
+		BB000002000000000000000A /* FileListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileListView.swift; sourceTree = "<group>"; };
+		BB000002000000000000000B /* ResultsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -182,10 +222,70 @@
 			path = Diagnostics;
 			sourceTree = "<group>";
 		};
+		BB00000300000000000000A1 /* AppNuker */ = {
+			isa = PBXGroup;
+			children = (
+				BB00000300000000000000A2 /* Models */,
+				BB00000300000000000000A3 /* Services */,
+				BB00000300000000000000A4 /* ViewModels */,
+				BB00000300000000000000A5 /* Views */,
+			);
+			path = AppNuker;
+			sourceTree = "<group>";
+		};
+		BB00000300000000000000A2 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				BB0000020000000000000001 /* AppInfo.swift */,
+				BB0000020000000000000002 /* FoundFile.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		BB00000300000000000000A3 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				BB0000020000000000000003 /* AppScanner.swift */,
+				BB0000020000000000000004 /* FileRemover.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		BB00000300000000000000A4 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				BB0000020000000000000005 /* AppnukerViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		BB00000300000000000000A5 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				BB0000020000000000000006 /* AppNukerContentView.swift */,
+				BB0000020000000000000007 /* DetailPaneView.swift */,
+				BB0000020000000000000008 /* DoneView.swift */,
+				BB0000020000000000000009 /* DropZoneView.swift */,
+				BB000002000000000000000A /* FileListView.swift */,
+				BB000002000000000000000B /* ResultsView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		AA00000300000000000000A5 /* Cleanup */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000020000000000000009 /* CleanupView.swift */,
+			);
+			path = Cleanup;
+			sourceTree = "<group>";
+		};
 		27CAD9E10ABA0DE2BD388B27 /* Features */ = {
 			isa = PBXGroup;
 			children = (
+				BB00000300000000000000A1 /* AppNuker */,
 				65AA6DAFAD52B0DA63DF1CBF /* Chat */,
+				AA00000300000000000000A5 /* Cleanup */,
 				907E25ECCCB7F6B63A3233B1 /* KillApps */,
 				2F6E699040D517B4D05E96B7 /* Monitor */,
 				7F1B445B904A237561F636EE /* Settings */,
@@ -240,6 +340,7 @@
 			children = (
 				E1393A7682EE27EBAC5B2D0F /* MetricCardView.swift */,
 				7F350E46D8A4E85233A2F349 /* MonitorDashboardView.swift */,
+				AA0000020000000000000005 /* SparklineView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -336,11 +437,47 @@
 			path = Settings;
 			sourceTree = "<group>";
 		};
+		AA00000300000000000000A1 /* Notifications */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000020000000000000003 /* NotificationManager.swift */,
+			);
+			path = Notifications;
+			sourceTree = "<group>";
+		};
+		AA00000300000000000000A2 /* ChatHistory */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000020000000000000004 /* ChatHistoryStore.swift */,
+			);
+			path = ChatHistory;
+			sourceTree = "<group>";
+		};
+		AA00000300000000000000A3 /* Network */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000020000000000000007 /* SpeedTestService.swift */,
+			);
+			path = Network;
+			sourceTree = "<group>";
+		};
+		AA00000300000000000000A4 /* Cleanup */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000020000000000000008 /* DiskCleanupService.swift */,
+			);
+			path = Cleanup;
+			sourceTree = "<group>";
+		};
 		8246451E7F8C2BB1B2148C06 /* Services */ = {
 			isa = PBXGroup;
 			children = (
 				A61AF35C977E74D6D8FB3FEE /* Claude */,
+				AA00000300000000000000A2 /* ChatHistory */,
+				AA00000300000000000000A4 /* Cleanup */,
 				D0772319D11766F19F75A3A7 /* Diagnostics */,
+				AA00000300000000000000A3 /* Network */,
+				AA00000300000000000000A1 /* Notifications */,
 				ECED0A428CAA456167FC9300 /* Settings */,
 				FE00F1E483907079B8966A80 /* SystemMonitor */,
 			);
@@ -428,6 +565,7 @@
 				408C9A0B6AA701A97E5A8DAD /* DiagnosticCatalog.swift */,
 				0151781A02B6B1D2796166AC /* DiagnosticCommand.swift */,
 				ABB4AD9F4EC201A5EEF1EEAD /* DiagnosticRunner.swift */,
+				AA0000020000000000000006 /* DiagnosticExporter.swift */,
 			);
 			path = Diagnostics;
 			sourceTree = "<group>";
@@ -444,6 +582,8 @@
 			isa = PBXGroup;
 			children = (
 				624054FE669CF1D6CF5C7312 /* SystemSettingsLauncher.swift */,
+				AA0000020000000000000001 /* LaunchAtLoginManager.swift */,
+				AA0000020000000000000002 /* UserSettings.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -615,6 +755,26 @@
 				91528621B3D67DEFFF3B2280 /* ClaudeTerminalView.swift in Sources */,
 				48A1F332089D00F41B0C84C2 /* DiagnosticCatalog.swift in Sources */,
 				63491426C87F53C32429AF76 /* DiagnosticCommand.swift in Sources */,
+				AA0000010000000000000001 /* LaunchAtLoginManager.swift in Sources */,
+				AA0000010000000000000002 /* UserSettings.swift in Sources */,
+				AA0000010000000000000003 /* NotificationManager.swift in Sources */,
+				AA0000010000000000000004 /* ChatHistoryStore.swift in Sources */,
+				AA0000010000000000000005 /* SparklineView.swift in Sources */,
+				AA0000010000000000000006 /* DiagnosticExporter.swift in Sources */,
+				AA0000010000000000000007 /* SpeedTestService.swift in Sources */,
+				AA0000010000000000000008 /* DiskCleanupService.swift in Sources */,
+				AA0000010000000000000009 /* CleanupView.swift in Sources */,
+				BB0000010000000000000001 /* AppInfo.swift in Sources */,
+				BB0000010000000000000002 /* FoundFile.swift in Sources */,
+				BB0000010000000000000003 /* AppScanner.swift in Sources */,
+				BB0000010000000000000004 /* FileRemover.swift in Sources */,
+				BB0000010000000000000005 /* AppnukerViewModel.swift in Sources */,
+				BB0000010000000000000006 /* AppNukerContentView.swift in Sources */,
+				BB0000010000000000000007 /* DetailPaneView.swift in Sources */,
+				BB0000010000000000000008 /* DoneView.swift in Sources */,
+				BB0000010000000000000009 /* DropZoneView.swift in Sources */,
+				BB000001000000000000000A /* FileListView.swift in Sources */,
+				BB000001000000000000000B /* ResultsView.swift in Sources */,
 				C7264F00AAA2CA2B31B7C4EC /* DiagnosticRunner.swift in Sources */,
 				0D36C5D7D0F86859896E732A /* DiskMonitor.swift in Sources */,
 				353463EA041BC1688D8973E5 /* HTTPClient.swift in Sources */,

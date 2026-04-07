@@ -42,7 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.minSize = Self.minimumWindowSize
         window.isReleasedWhenClosed = false
         window.delegate = self
-        window.backgroundColor = NSColor(red: 0.07, green: 0.07, blue: 0.09, alpha: 1)
+        window.backgroundColor = Theme.Colors.terminalBG
 
         // Set content and show
         let contentView = MainContentView()

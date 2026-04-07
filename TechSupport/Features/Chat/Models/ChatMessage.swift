@@ -1,13 +1,13 @@
 import Foundation
 
-struct ChatMessage: Identifiable, Equatable, Sendable {
+struct ChatMessage: Identifiable, Equatable, Sendable, Codable {
     let id: UUID
     let role: Role
     let content: String
     let timestamp: Date
     let systemContext: SystemMetrics?
 
-    enum Role: String, Sendable {
+    enum Role: String, Sendable, Codable {
         case user
         case assistant
         case system
