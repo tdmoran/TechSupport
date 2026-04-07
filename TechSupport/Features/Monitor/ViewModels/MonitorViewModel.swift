@@ -67,6 +67,19 @@ final class MonitorViewModel {
             .sorted()
     }
 
+    var backgroundAppNames: [String] {
+        NSWorkspace.shared.runningApplications
+            .filter { $0.activationPolicy == .accessory || $0.activationPolicy == .prohibited }
+            .compactMap { $0.localizedName }
+            .filter { !$0.isEmpty }
+            .sorted()
+    }
+
+    func forceQuitApp(named name: String) {
+        guard let app = NSWorkspace.shared.runningApplications.first(where: { $0.localizedName == name }) else { return }
+        app.forceTerminate()
+    }
+
     enum StatusColor {
         case green, yellow, red
     }

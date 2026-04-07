@@ -39,6 +39,13 @@ enum SettingsPane: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    var prefPanePath: String? {
+        switch self {
+        case .battery: return "/System/Library/PreferencePanes/Battery.prefPane"
+        default: return nil
+        }
+    }
+
     var icon: String {
         switch self {
         case .general: return "gear"
@@ -62,6 +69,11 @@ enum SettingsPane: String, CaseIterable, Identifiable, Sendable {
 
 enum SystemSettingsLauncher {
     static func open(_ pane: SettingsPane) {
+        // Some panes need to be opened via their prefPane bundle
+        if let prefPanePath = pane.prefPanePath {
+            NSWorkspace.shared.open(URL(fileURLWithPath: prefPanePath))
+            return
+        }
         let urlString = "x-apple.systempreferences:\(pane.rawValue)"
         guard let url = URL(string: urlString) else { return }
         NSWorkspace.shared.open(url)

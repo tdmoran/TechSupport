@@ -3,6 +3,7 @@ import SwiftUI
 struct MonitorDashboardView: View {
     @Bindable var viewModel: MonitorViewModel
     @State private var showKillApps = false
+    @State private var showBackgroundApps = false
 
     private let columns = [
         GridItem(.flexible(), spacing: Theme.Spacing.medium),
@@ -196,6 +197,7 @@ struct MonitorDashboardView: View {
 
     private var runningAppsCard: some View {
         let apps = viewModel.runningAppNames
+        let backgroundApps = viewModel.backgroundAppNames
         return VStack(alignment: .leading, spacing: Theme.Spacing.small) {
             HStack(spacing: Theme.Spacing.xsmall) {
                 Image(systemName: "square.stack.3d.up")
@@ -211,14 +213,69 @@ struct MonitorDashboardView: View {
                     .foregroundStyle(Theme.Colors.textPrimary)
             }
 
-            // Compact scrollable list of app names
+            // Foreground apps list
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: Theme.Spacing.xxsmall) {
                     ForEach(apps, id: \.self) { name in
-                        Text(name)
-                            .font(.system(size: 10, weight: .medium, design: .monospaced))
-                            .foregroundStyle(Theme.Colors.textSecondary)
-                            .lineLimit(1)
+                        HStack {
+                            Text(name)
+                                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                .foregroundStyle(Theme.Colors.textSecondary)
+                                .lineLimit(1)
+                            Spacer()
+                            Button {
+                                viewModel.forceQuitApp(named: name)
+                            } label: {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 8, weight: .bold))
+                                    .foregroundStyle(Theme.Colors.textTertiary)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+
+            // Background apps toggle button
+            if !backgroundApps.isEmpty {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        showBackgroundApps.toggle()
+                    }
+                } label: {
+                    HStack(spacing: Theme.Spacing.xsmall) {
+                        Image(systemName: showBackgroundApps ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 8, weight: .semibold))
+                        Text("\(showBackgroundApps ? "Hide" : "Show") Background Apps (\(backgroundApps.count))")
+                            .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    }
+                    .foregroundStyle(Theme.Colors.accent)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, Theme.Spacing.small)
+                }
+                .buttonStyle(.plain)
+
+                if showBackgroundApps {
+                    ScrollView(.vertical, showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: Theme.Spacing.xxsmall) {
+                            ForEach(backgroundApps, id: \.self) { name in
+                                HStack {
+                                    Text(name)
+                                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                        .foregroundStyle(Theme.Colors.textTertiary)
+                                        .lineLimit(1)
+                                    Spacer()
+                                    Button {
+                                        viewModel.forceQuitApp(named: name)
+                                    } label: {
+                                        Image(systemName: "xmark")
+                                            .font(.system(size: 8, weight: .bold))
+                                            .foregroundStyle(Theme.Colors.textTertiary)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -284,7 +341,7 @@ struct MonitorDashboardView: View {
                 // Activity Monitor first
                 Button {
                     NSWorkspace.shared.open(
-                        URL(fileURLWithPath: "/System/Library/CoreServices/Applications/Activity Monitor.app")
+                        URL(fileURLWithPath: "/System/Applications/Utilities/Activity Monitor.app")
                     )
                 } label: {
                     VStack(spacing: Theme.Spacing.small) {
