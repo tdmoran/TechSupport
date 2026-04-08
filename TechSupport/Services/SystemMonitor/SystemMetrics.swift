@@ -27,6 +27,7 @@ struct SystemMetrics: Sendable, Identifiable, Codable {
     let networkBytesReceived: UInt64
     let batteryLevel: Double?
     let batteryIsCharging: Bool?
+    let batteryInfo: BatteryInfo?
     let uptimeSeconds: TimeInterval
     let macOSVersion: String
     let hardwareModel: String
@@ -45,6 +46,7 @@ struct SystemMetrics: Sendable, Identifiable, Codable {
         networkBytesReceived: UInt64,
         batteryLevel: Double?,
         batteryIsCharging: Bool?,
+        batteryInfo: BatteryInfo? = nil,
         uptimeSeconds: TimeInterval,
         macOSVersion: String,
         hardwareModel: String,
@@ -62,6 +64,7 @@ struct SystemMetrics: Sendable, Identifiable, Codable {
         self.networkBytesReceived = networkBytesReceived
         self.batteryLevel = batteryLevel
         self.batteryIsCharging = batteryIsCharging
+        self.batteryInfo = batteryInfo
         self.uptimeSeconds = uptimeSeconds
         self.macOSVersion = macOSVersion
         self.hardwareModel = hardwareModel

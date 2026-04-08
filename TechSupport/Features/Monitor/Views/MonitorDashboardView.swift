@@ -16,27 +16,42 @@ struct MonitorDashboardView: View {
 
     var body: some View {
         List {
-            systemInfoHeader
-                .listRowSeparator(.hidden)
-                .listRowInsets(EdgeInsets(top: 0, leading: Theme.Spacing.large, bottom: 0, trailing: Theme.Spacing.large))
-                .listRowBackground(Color.clear)
-            killAppsButton
-                .listRowSeparator(.hidden)
-                .listRowInsets(EdgeInsets(top: Theme.Spacing.medium, leading: Theme.Spacing.large, bottom: 0, trailing: Theme.Spacing.large))
-                .listRowBackground(Color.clear)
             metricsGrid
                 .listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets(top: Theme.Spacing.medium, leading: Theme.Spacing.large, bottom: 0, trailing: Theme.Spacing.large))
                 .listRowBackground(Color.clear)
-            peripheralsCard
+            if viewModel.metrics.batteryLevel != nil {
+                HStack(alignment: .top, spacing: Theme.Spacing.medium) {
+                    runningAppsCard
+                    peripheralsCard
+                }
                 .listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets(top: Theme.Spacing.medium, leading: Theme.Spacing.large, bottom: 0, trailing: Theme.Spacing.large))
                 .listRowBackground(Color.clear)
+            }
+            networkCard
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: Theme.Spacing.medium, leading: Theme.Spacing.large, bottom: 0, trailing: Theme.Spacing.large))
+                .listRowBackground(Color.clear)
+            if viewModel.metrics.batteryLevel == nil {
+                peripheralsCard
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: Theme.Spacing.medium, leading: Theme.Spacing.large, bottom: 0, trailing: Theme.Spacing.large))
+                    .listRowBackground(Color.clear)
+            }
             exportReportButton
                 .listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets(top: Theme.Spacing.medium, leading: Theme.Spacing.large, bottom: 0, trailing: Theme.Spacing.large))
                 .listRowBackground(Color.clear)
             quickSettings
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: Theme.Spacing.medium, leading: Theme.Spacing.large, bottom: 0, trailing: Theme.Spacing.large))
+                .listRowBackground(Color.clear)
+            systemInfoHeader
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: Theme.Spacing.medium, leading: Theme.Spacing.large, bottom: 0, trailing: Theme.Spacing.large))
+                .listRowBackground(Color.clear)
+            killAppsButton
                 .listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets(top: Theme.Spacing.medium, leading: Theme.Spacing.large, bottom: Theme.Spacing.xlarge, trailing: Theme.Spacing.large))
                 .listRowBackground(Color.clear)
@@ -180,49 +195,94 @@ struct MonitorDashboardView: View {
                     unit: nil,
                     subtitle: "of \(viewModel.metrics.formattedDiskTotal)",
                     progress: viewModel.metrics.diskUsagePercent / 100,
-                    statusColor: viewModel.diskStatusColor
+                    statusColor: viewModel.diskStatusColor,
+                    sparklineData: viewModel.history.map(\.diskUsagePercent)
                 )
 
-                // Wi-Fi Speed
-                if let wifi = viewModel.wifiInfo {
-                    MetricCardView(
-                        icon: wifi.signalQuality.icon,
-                        title: "Wi-Fi",
-                        value: wifi.formattedSpeed,
-                        unit: nil,
-                        subtitle: "\(wifi.phyMode) \(wifi.band) \(wifi.formattedSignal)",
-                        progress: min(wifi.txRate / 2400, 1.0),
-                        statusColor: viewModel.wifiStatusColor
-                    )
+                // Battery (if available) or placeholder
+                if let level = viewModel.metrics.batteryLevel {
+                    batteryCard(level: level)
                 } else {
-                    MetricCardView(
-                        icon: "wifi.slash",
-                        title: "Wi-Fi",
-                        value: "Off",
-                        unit: nil,
-                        subtitle: "No wireless connection",
-                        progress: nil,
-                        statusColor: .red
-                    )
+                    // Running Apps in 4th slot when no battery
+                    runningAppsCard
                 }
-
-                // Network Health
-                MetricCardView(
-                    icon: viewModel.networkHealth.overallStatus.icon,
-                    title: "Network",
-                    value: viewModel.networkHealth.statusLabel,
-                    unit: nil,
-                    subtitle: "Ping: \(viewModel.networkHealth.formattedLatency) \(viewModel.networkHealth.dnsResolved ? "DNS OK" : "DNS fail")",
-                    progress: nil,
-                    statusColor: viewModel.networkHealthStatusColor
-                )
-
-                // Speed Test
-                speedTestCard
-
-                // Running Apps — compact list in a metric-sized card
-                runningAppsCard
             }
+        }
+    }
+
+    // MARK: - Battery Card
+
+    private func batteryCard(level: Double) -> some View {
+        let info = viewModel.metrics.batteryInfo
+        return VStack(alignment: .leading, spacing: Theme.Spacing.medium) {
+            // Header
+            HStack(spacing: Theme.Spacing.xsmall) {
+                Image(systemName: info?.isCharging == true ? "battery.100.bolt" : "battery.100")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(batteryColor.opacity(0.8))
+                Text("BATTERY")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundStyle(Theme.Colors.textSecondary)
+                    .tracking(0.5)
+                Spacer()
+            }
+
+            // Level
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text("\(Int(level))")
+                    .font(Theme.Fonts.metricValue)
+                    .foregroundStyle(Theme.Colors.textPrimary)
+                Text("%")
+                    .font(Theme.Fonts.metricUnit)
+                    .foregroundStyle(Theme.Colors.textSecondary)
+            }
+
+            // Charge status
+            if let info {
+                Text(info.chargingStatus)
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundStyle(info.isCharging ? Theme.Colors.statusGreen : Theme.Colors.textSecondary)
+
+                Text(info.isCharging ? "Full in \(info.formattedTimeRemaining)" : "\(info.formattedTimeRemaining) remaining")
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundStyle(Theme.Colors.textTertiary)
+
+                HStack(spacing: Theme.Spacing.medium) {
+                    Text("Health: \(Int(info.healthPercent))%")
+                        .font(.system(size: 9, weight: .medium, design: .monospaced))
+                        .foregroundStyle(Theme.Colors.textTertiary)
+                    Text("Cycles: \(info.cycleCount)")
+                        .font(.system(size: 9, weight: .medium, design: .monospaced))
+                        .foregroundStyle(Theme.Colors.textTertiary)
+                }
+            }
+
+            // Progress bar
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Theme.Colors.surfaceBorder)
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(
+                            LinearGradient(
+                                colors: [batteryColor.opacity(0.7), batteryColor],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: geo.size.width * min(level / 100, 1.0))
+                }
+            }
+            .frame(height: 4)
+        }
+        .cardStyle()
+    }
+
+    private var batteryColor: Color {
+        switch viewModel.batteryStatusColor {
+        case .green: return Theme.Colors.statusGreen
+        case .yellow: return Theme.Colors.statusYellow
+        case .red: return Theme.Colors.statusRed
         }
     }
 
@@ -315,147 +375,181 @@ struct MonitorDashboardView: View {
     // MARK: - Peripherals
 
     private var peripheralsCard: some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.medium) {
-            sectionHeader("Connected Devices", icon: "cable.connector")
-
-            if viewModel.peripherals.isEmpty {
-                HStack(spacing: Theme.Spacing.medium) {
-                    Image(systemName: "cable.connector.slash")
-                        .font(.system(size: 16))
-                        .foregroundStyle(Theme.Colors.textTertiary)
-                    Text("No external devices detected")
-                        .font(Theme.Fonts.body)
-                        .foregroundStyle(Theme.Colors.textSecondary)
-                    Spacer()
-                }
-                .padding(Theme.Spacing.large)
-                .cardStyle()
-            } else {
-                VStack(spacing: Theme.Spacing.small) {
-                    ForEach(viewModel.peripherals) { device in
-                        HStack(spacing: Theme.Spacing.medium) {
-                            Image(systemName: device.type.icon)
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(Theme.Colors.accent)
-                                .frame(width: 24)
-
-                            VStack(alignment: .leading, spacing: Theme.Spacing.xxsmall) {
-                                Text(device.displayName)
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundStyle(Theme.Colors.textPrimary)
-                                    .lineLimit(1)
-                                Text(device.type.rawValue)
-                                    .font(Theme.Fonts.caption)
-                                    .foregroundStyle(Theme.Colors.textTertiary)
-                            }
-
-                            Spacer()
-                        }
-                        .padding(.vertical, Theme.Spacing.small)
-                        .padding(.horizontal, Theme.Spacing.medium)
-                    }
-                }
-                .cardStyle(padding: Theme.Spacing.medium)
-            }
-        }
-    }
-
-    // MARK: - Speed Test Card
-
-    private var speedTestCard: some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.medium) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.small) {
             HStack(spacing: Theme.Spacing.xsmall) {
-                Image(systemName: "speedometer")
+                Image(systemName: "cable.connector")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(Theme.Colors.accent.opacity(0.8))
-                Text("SPEED TEST")
+                Text("DEVICES")
                     .font(.system(size: 10, weight: .bold, design: .rounded))
                     .foregroundStyle(Theme.Colors.textSecondary)
                     .tracking(0.5)
                 Spacer()
+                Text("\(viewModel.peripherals.count)")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundStyle(Theme.Colors.textPrimary)
             }
 
-            if viewModel.isRunningSpeedTest {
-                VStack(spacing: Theme.Spacing.medium) {
-                    ProgressView()
-                        .controlSize(.small)
-                        .tint(Theme.Colors.accent)
-                    Text("Testing...")
-                        .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.textSecondary)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, Theme.Spacing.small)
-            } else if let result = viewModel.speedTestResult {
-                VStack(alignment: .leading, spacing: Theme.Spacing.small) {
-                    HStack(alignment: .firstTextBaseline, spacing: 2) {
-                        Image(systemName: "arrow.down.circle.fill")
-                            .font(.system(size: 10))
-                            .foregroundStyle(Theme.Colors.statusGreen)
-                        Text(result.formattedDownload)
-                            .font(Theme.Fonts.metricValue)
-                            .foregroundStyle(Theme.Colors.textPrimary)
-                        Text("Mbps")
-                            .font(Theme.Fonts.metricUnit)
-                            .foregroundStyle(Theme.Colors.textSecondary)
-                    }
-
-                    if let _ = result.uploadMbps {
-                        HStack(spacing: 2) {
-                            Image(systemName: "arrow.up.circle.fill")
-                                .font(.system(size: 10))
+            if viewModel.peripherals.isEmpty {
+                Text("No external devices")
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundStyle(Theme.Colors.textTertiary)
+            } else {
+                VStack(alignment: .leading, spacing: Theme.Spacing.xxsmall) {
+                    ForEach(viewModel.peripherals) { device in
+                        HStack(spacing: Theme.Spacing.xsmall) {
+                            Image(systemName: device.type.icon)
+                                .font(.system(size: 9, weight: .medium))
                                 .foregroundStyle(Theme.Colors.accent)
-                            Text("\(result.formattedUpload) Mbps up")
-                                .font(Theme.Fonts.caption)
+                                .frame(width: 14)
+                            Text(device.displayName)
+                                .font(.system(size: 10, weight: .medium, design: .monospaced))
                                 .foregroundStyle(Theme.Colors.textSecondary)
+                                .lineLimit(1)
+                            Spacer()
+                            Text(device.type.rawValue)
+                                .font(.system(size: 9, weight: .medium))
+                                .foregroundStyle(Theme.Colors.textTertiary)
                         }
                     }
-
-                    Text("Latency: \(result.formattedLatency)")
-                        .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.textTertiary)
                 }
-
-                Button {
-                    viewModel.startSpeedTest()
-                } label: {
-                    Text("Run Again")
-                        .font(.system(size: 10, weight: .semibold, design: .rounded))
-                        .foregroundStyle(Theme.Colors.accent)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, Theme.Spacing.small)
-                        .background(
-                            RoundedRectangle(cornerRadius: Theme.CornerRadius.small)
-                                .fill(Theme.Colors.accentSubtle)
-                        )
-                }
-                .buttonStyle(.plain)
-            } else {
-                Button {
-                    viewModel.startSpeedTest()
-                } label: {
-                    HStack(spacing: Theme.Spacing.xsmall) {
-                        Image(systemName: "play.fill")
-                            .font(.system(size: 10))
-                        Text("Run Speed Test")
-                            .font(.system(size: 11, weight: .semibold, design: .rounded))
-                    }
-                    .foregroundStyle(Theme.Colors.accent)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, Theme.Spacing.medium)
-                    .background(
-                        RoundedRectangle(cornerRadius: Theme.CornerRadius.small)
-                            .fill(Theme.Colors.accentSubtle)
-                    )
-                }
-                .buttonStyle(.plain)
-
-                Text("Measure download speed & latency")
-                    .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.textTertiary)
             }
         }
         .cardStyle()
+    }
+
+    // MARK: - Combined Network Card
+
+    private var networkCard: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.medium) {
+            sectionHeader("Network", icon: "network")
+
+            HStack(alignment: .top, spacing: Theme.Spacing.medium) {
+                // Wi-Fi column
+                VStack(alignment: .leading, spacing: Theme.Spacing.small) {
+                    HStack(spacing: Theme.Spacing.xsmall) {
+                        Image(systemName: viewModel.wifiInfo?.signalQuality.icon ?? "wifi.slash")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Theme.Colors.accent.opacity(0.8))
+                        Text("WI-FI")
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .foregroundStyle(Theme.Colors.textSecondary)
+                            .tracking(0.5)
+                    }
+
+                    if let wifi = viewModel.wifiInfo {
+                        Text(wifi.formattedSpeed)
+                            .font(Theme.Fonts.metricValue)
+                            .foregroundStyle(Theme.Colors.textPrimary)
+                        Text("\(wifi.phyMode) · \(wifi.band)")
+                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .foregroundStyle(Theme.Colors.textSecondary)
+                        Text("Signal: \(wifi.formattedSignal)")
+                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .foregroundStyle(Theme.Colors.textTertiary)
+                    } else {
+                        Text("Off")
+                            .font(Theme.Fonts.metricValue)
+                            .foregroundStyle(Theme.Colors.textTertiary)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                // Divider
+                Theme.Colors.divider.frame(width: 1)
+
+                // Health column
+                VStack(alignment: .leading, spacing: Theme.Spacing.small) {
+                    HStack(spacing: Theme.Spacing.xsmall) {
+                        Image(systemName: viewModel.networkHealth.overallStatus.icon)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Theme.Colors.accent.opacity(0.8))
+                        Text("HEALTH")
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .foregroundStyle(Theme.Colors.textSecondary)
+                            .tracking(0.5)
+                    }
+
+                    Text(viewModel.networkHealth.statusLabel)
+                        .font(Theme.Fonts.metricValue)
+                        .foregroundStyle(Theme.Colors.textPrimary)
+                    Text("Ping: \(viewModel.networkHealth.formattedLatency)")
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .foregroundStyle(Theme.Colors.textSecondary)
+                    Text(viewModel.networkHealth.dnsResolved ? "DNS OK" : "DNS fail")
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .foregroundStyle(viewModel.networkHealth.dnsResolved ? Theme.Colors.statusGreen : Theme.Colors.statusRed)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                // Divider
+                Theme.Colors.divider.frame(width: 1)
+
+                // Speed Test column
+                VStack(alignment: .leading, spacing: Theme.Spacing.small) {
+                    HStack(spacing: Theme.Spacing.xsmall) {
+                        Image(systemName: "speedometer")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Theme.Colors.accent.opacity(0.8))
+                        Text("SPEED")
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .foregroundStyle(Theme.Colors.textSecondary)
+                            .tracking(0.5)
+                    }
+
+                    if viewModel.isRunningSpeedTest {
+                        ProgressView()
+                            .controlSize(.small)
+                            .tint(Theme.Colors.accent)
+                        Text("Testing...")
+                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .foregroundStyle(Theme.Colors.textSecondary)
+                    } else if let result = viewModel.speedTestResult {
+                        HStack(alignment: .firstTextBaseline, spacing: 2) {
+                            Text(result.formattedDownload)
+                                .font(Theme.Fonts.metricValue)
+                                .foregroundStyle(Theme.Colors.textPrimary)
+                            Text("Mbps")
+                                .font(Theme.Fonts.metricUnit)
+                                .foregroundStyle(Theme.Colors.textSecondary)
+                        }
+                        Text("Latency: \(result.formattedLatency)")
+                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .foregroundStyle(Theme.Colors.textTertiary)
+
+                        Button {
+                            viewModel.startSpeedTest()
+                        } label: {
+                            Text("Run Again")
+                                .font(.system(size: 9, weight: .semibold, design: .rounded))
+                                .foregroundStyle(Theme.Colors.accent)
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        Button {
+                            viewModel.startSpeedTest()
+                        } label: {
+                            HStack(spacing: Theme.Spacing.xsmall) {
+                                Image(systemName: "play.fill")
+                                    .font(.system(size: 9))
+                                Text("Run Test")
+                                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            }
+                            .foregroundStyle(Theme.Colors.accent)
+                            .padding(.horizontal, Theme.Spacing.medium)
+                            .padding(.vertical, Theme.Spacing.small)
+                            .background(
+                                RoundedRectangle(cornerRadius: Theme.CornerRadius.small)
+                                    .fill(Theme.Colors.accentSubtle)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .cardStyle()
+        }
     }
 
     // MARK: - Export Report

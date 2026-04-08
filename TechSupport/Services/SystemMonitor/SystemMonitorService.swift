@@ -105,6 +105,7 @@ final class SystemMonitorService {
             networkBytesReceived: network.received,
             batteryLevel: battery?.level,
             batteryIsCharging: battery?.isCharging,
+            batteryInfo: battery,
             uptimeSeconds: ProcessInfo.processInfo.systemUptime,
             macOSVersion: macOSVersion,
             hardwareModel: hardwareModel,
