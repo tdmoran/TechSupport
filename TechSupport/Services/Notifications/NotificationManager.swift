@@ -21,8 +21,8 @@ final class NotificationManager {
     private let cpuThreshold: Double = 90
     private let diskThreshold: Double = 90
     private let batteryThreshold: Double = 15
-    /// How many consecutive high-CPU samples before alerting (2s refresh * 15 = 30s).
-    private let cpuSustainedCount: Int = 15
+    private let cpuSustainedDuration: TimeInterval = 30
+    private var refreshInterval: TimeInterval = AppConstants.monitorRefreshInterval
 
     // MARK: - Permission
 
@@ -34,6 +34,11 @@ final class NotificationManager {
             }
             logger.info("Notification permission granted: \(granted)")
         }
+    }
+
+    func configure(refreshInterval: TimeInterval) {
+        self.refreshInterval = max(1, refreshInterval)
+        cpuHighCount = 0
     }
 
     // MARK: - Threshold evaluation
@@ -59,10 +64,11 @@ final class NotificationManager {
             cpuHighCount = 0
         }
 
-        if cpuHighCount >= cpuSustainedCount && canAlert(last: lastCPUAlert) {
+        let sustainedSampleCount = max(1, Int(ceil(cpuSustainedDuration / refreshInterval)))
+        if cpuHighCount >= sustainedSampleCount && canAlert(last: lastCPUAlert) {
             sendNotification(
                 title: "High CPU Usage",
-                body: String(format: "CPU has been above %.0f%% for 30+ seconds (currently %.0f%%).", cpuThreshold, usage)
+                body: String(format: "CPU has been above %.0f%% for %.0f+ seconds (currently %.0f%%).", cpuThreshold, cpuSustainedDuration, usage)
             )
             lastCPUAlert = Date()
             cpuHighCount = 0

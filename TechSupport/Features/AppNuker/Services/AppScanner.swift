@@ -51,12 +51,10 @@ struct AppScanner {
         return protectedPrefixes.contains { lower.hasPrefix($0) }
     }
 
-    /// Check whether a filename matches the bundle ID or app name.
+    /// Check whether a filename matches the bundle ID or app name with a conservative policy.
     ///
-    /// Uses the full bundle ID first (highest confidence), then individual
-    /// reverse-domain components (e.g. "tinyspeck" from com.tinyspeck.slackmacgap),
-    /// then the app display name (only if >= 5 chars to avoid false positives
-    /// with short names like "Mail", "Maps", "News", "Zoom").
+    /// This intentionally avoids vendor-level component matching because AppNuker
+    /// is destructive and false positives are worse than false negatives.
     private static func matches(name: String, bundleID: String, appName: String) -> Bool {
         let nameLower = name.lowercased()
         let bidLower = bundleID.lowercased()
@@ -66,23 +64,22 @@ struct AppScanner {
             return true
         }
 
-        // Match on significant bundle ID components (skip generic "com", "org", etc.)
-        let genericPrefixes: Set<String> = ["com", "org", "net", "io", "app", "me", "co", "dev", "mac", "macos"]
-        let components = bidLower.split(separator: ".")
-        for component in components {
-            let comp = String(component)
-            if comp.count >= 3 && !genericPrefixes.contains(comp) && nameLower.contains(comp) {
-                return true
-            }
-        }
-
-        // App display name — require >= 4 chars to avoid very short name false positives
-        let appLower = appName.lowercased()
-        if appLower.count >= 4 && nameLower.contains(appLower) {
+        // Match the display name only when it appears as a complete normalized phrase.
+        let normalizedName = normalizedForPhraseMatch(nameLower)
+        let normalizedAppName = normalizedForPhraseMatch(appName.lowercased())
+        if normalizedAppName.count >= 4 && normalizedName.contains(normalizedAppName) {
             return true
         }
 
         return false
+    }
+
+    private static func normalizedForPhraseMatch(_ value: String) -> String {
+        let separators = CharacterSet.alphanumerics.inverted
+        let tokens = value
+            .components(separatedBy: separators)
+            .filter { !$0.isEmpty }
+        return " " + tokens.joined(separator: " ") + " "
     }
 
     /// Scan the filesystem for all files related to the given app.

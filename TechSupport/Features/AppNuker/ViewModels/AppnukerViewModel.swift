@@ -169,7 +169,11 @@ final class AppnukerViewModel: ObservableObject {
                     guard let self else { return }
                     self.appInfo = info
                     self.foundFiles = files
-                    self.selectedFileIDs = Set(files.map(\.id))
+                    self.selectedFileIDs = Set(
+                        files
+                            .filter { !$0.requiresSudo || $0.category == .applicationBundle }
+                            .map(\.id)
+                    )
                     self.state = .results
                 }
             } catch {

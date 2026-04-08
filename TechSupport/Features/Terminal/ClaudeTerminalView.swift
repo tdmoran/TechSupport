@@ -104,63 +104,76 @@ struct ClaudeTerminalView: View {
             .padding(.vertical, Theme.Spacing.medium)
         }
         .onAppear {
-            checkClaudeStatus()
+            Task {
+                await checkClaudeStatus()
+            }
         }
     }
 
-    private func checkClaudeStatus() {
-        let path = TerminalCoordinator.claudePath
-        isInstalledOnSystem = FileManager.default.isExecutableFile(atPath: path) || path == "claude"
+    private func checkClaudeStatus() async {
+        claudeStatus = .checking
 
-        // Check if claude is actually reachable
-        if !isInstalledOnSystem {
-            // Try which claude
+        let installed = await Task.detached { () -> Bool in
+            let path = TerminalCoordinator.claudePath
+            if FileManager.default.isExecutableFile(atPath: path) {
+                return true
+            }
+
             let whichProcess = Process()
             let whichPipe = Pipe()
             whichProcess.executableURL = URL(fileURLWithPath: "/bin/zsh")
             whichProcess.arguments = ["-l", "-c", "which claude 2>/dev/null"]
             whichProcess.standardOutput = whichPipe
             whichProcess.standardError = whichPipe
-            try? whichProcess.run()
-            whichProcess.waitUntilExit()
-            let whichData = whichPipe.fileHandleForReading.readDataToEndOfFile()
-            let whichResult = String(data: whichData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            isInstalledOnSystem = !whichResult.isEmpty && whichProcess.terminationStatus == 0
-        }
+            do {
+                try whichProcess.run()
+                whichProcess.waitUntilExit()
+                let whichData = whichPipe.fileHandleForReading.readDataToEndOfFile()
+                let whichResult = String(data: whichData, encoding: .utf8)?
+                    .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                return !whichResult.isEmpty && whichProcess.terminationStatus == 0
+            } catch {
+                return false
+            }
+        }.value
 
-        guard isInstalledOnSystem else {
+        isInstalledOnSystem = installed
+
+        guard installed else {
             claudeStatus = .notInstalled
             return
         }
 
-        Task.detached {
+        let status = await Task.detached { () -> ClaudeAuthStatus in
             let process = Process()
             let pipe = Pipe()
             process.executableURL = URL(fileURLWithPath: "/bin/zsh")
             process.arguments = ["-l", "-c", "\(TerminalCoordinator.claudePath) auth status 2>&1"]
             process.standardOutput = pipe
             process.standardError = pipe
-            try? process.run()
-            process.waitUntilExit()
+            do {
+                try process.run()
+                process.waitUntilExit()
+            } catch {
+                return .notLoggedIn
+            }
 
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
             let output = String(data: data, encoding: .utf8) ?? ""
 
-            await MainActor.run {
-                if output.contains("\"loggedIn\": true") || output.contains("\"loggedIn\":true") {
-                    // Extract email
-                    if let emailRange = output.range(of: "\"email\": \""),
-                       let endRange = output[emailRange.upperBound...].range(of: "\"") {
-                        let email = String(output[emailRange.upperBound..<endRange.lowerBound])
-                        claudeStatus = .loggedIn(email: email)
-                    } else {
-                        claudeStatus = .loggedIn(email: "")
-                    }
-                } else {
-                    claudeStatus = .notLoggedIn
+            if output.contains("\"loggedIn\": true") || output.contains("\"loggedIn\":true") {
+                if let emailRange = output.range(of: "\"email\": \""),
+                   let endRange = output[emailRange.upperBound...].range(of: "\"") {
+                    let email = String(output[emailRange.upperBound..<endRange.lowerBound])
+                    return .loggedIn(email: email)
                 }
+                return .loggedIn(email: "")
             }
-        }
+
+            return .notLoggedIn
+        }.value
+
+        claudeStatus = status
     }
 }
 

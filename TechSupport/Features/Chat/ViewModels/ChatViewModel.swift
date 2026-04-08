@@ -19,6 +19,7 @@ final class ChatViewModel {
     let historyStore = ChatHistoryStore()
     private(set) var diagnosticResults: [DiagnosticResult] = []
     private let userSettings: UserSettings?
+    private var streamingTask: Task<Void, Never>?
 
     init(claudeClient: ClaudeAPIClient, monitorService: SystemMonitorService, settings: UserSettings? = nil) {
         self.claudeClient = claudeClient
@@ -56,49 +57,63 @@ final class ChatViewModel {
         let placeholderMessage = ChatMessage(role: .assistant, content: "...")
         session = session.appending(placeholderMessage)
 
-        do {
-            let stream = claudeClient.stream(
-                model: selectedModel,
-                system: systemPrompt,
-                messages: claudeMessages,
-                maxTokens: 4096
-            )
+        streamingTask = Task { @MainActor [weak self] in
+            guard let self else { return }
 
-            for try await event in stream {
-                switch event {
-                case .textDelta(let delta):
-                    assistantText += delta
-                    let updated = ChatMessage(
-                        id: placeholderMessage.id,
-                        role: .assistant,
-                        content: assistantText
-                    )
-                    session = session.replacingLast(with: updated)
-
-                case .messageComplete:
-                    logger.debug("Message complete")
-
-                case .error(let message):
-                    logger.error("Stream error: \(message)")
-                    error = .apiResponseInvalid(detail: message)
+            defer {
+                if assistantText.isEmpty {
+                    let withoutPlaceholder = Array(self.session.messages.dropLast())
+                    self.session = ChatSession(id: self.session.id, messages: withoutPlaceholder, createdAt: self.session.createdAt)
                 }
+
+                self.isStreaming = false
+                self.streamingTask = nil
+                self.historyStore.save(self.session)
             }
-        } catch let appError as AppError {
-            error = appError
-            logger.error("Chat error: \(appError.localizedDescription)")
-        } catch {
-            self.error = .apiNetworkError(error.localizedDescription)
-            logger.error("Chat error: \(error.localizedDescription)")
+
+            do {
+                let stream = self.claudeClient.stream(
+                    model: self.selectedModel,
+                    system: systemPrompt,
+                    messages: claudeMessages,
+                    maxTokens: 4096
+                )
+
+                for try await event in stream {
+                    switch event {
+                    case .textDelta(let delta):
+                        assistantText += delta
+                        let updated = ChatMessage(
+                            id: placeholderMessage.id,
+                            role: .assistant,
+                            content: assistantText
+                        )
+                        self.session = self.session.replacingLast(with: updated)
+
+                    case .messageComplete:
+                        logger.debug("Message complete")
+
+                    case .error(let message):
+                        logger.error("Stream error: \(message)")
+                        self.error = .apiResponseInvalid(detail: message)
+                    }
+                }
+            } catch is CancellationError {
+                logger.debug("Chat stream cancelled")
+            } catch let appError as AppError {
+                self.error = appError
+                logger.error("Chat error: \(appError.localizedDescription)")
+            } catch {
+                self.error = .apiNetworkError(error.localizedDescription)
+                logger.error("Chat error: \(error.localizedDescription)")
+            }
         }
 
-        if assistantText.isEmpty {
-            // Remove placeholder if no content was received
-            let withoutPlaceholder = Array(session.messages.dropLast())
-            session = ChatSession(id: session.id, messages: withoutPlaceholder, createdAt: session.createdAt)
-        }
+        await streamingTask?.value
+    }
 
-        isStreaming = false
-        historyStore.save(session)
+    func stopStreaming() {
+        streamingTask?.cancel()
     }
 
     func runDiagnostics(category: DiagnosticCategory) async {

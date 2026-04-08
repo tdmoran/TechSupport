@@ -65,12 +65,14 @@ final class DiskCleanupService {
             }
 
             logger.info("Cache cleanup completed with \(errors.count) errors")
+            let errorCount = errors.count
+            let cleanupError = errorCount > 0
+                ? "Could not remove \(errorCount) item(s) (in use or protected)"
+                : nil
 
             await MainActor.run {
                 self.isCleaning = false
-                if !errors.isEmpty {
-                    self.lastError = "Could not remove \(errors.count) item(s) (in use or protected)"
-                }
+                self.lastError = cleanupError
             }
 
             self.scan()

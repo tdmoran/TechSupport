@@ -38,6 +38,7 @@ final class SystemMonitorService {
     func start(settings: UserSettings? = nil) {
         self.userSettings = settings
         let interval = TimeInterval(settings?.refreshInterval ?? Int(AppConstants.monitorRefreshInterval))
+        notificationManager.configure(refreshInterval: interval)
         timer?.invalidate()
         timer = Timer.scheduledTimer(
             withTimeInterval: interval,

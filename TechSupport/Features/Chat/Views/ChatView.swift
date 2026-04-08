@@ -157,7 +157,11 @@ struct ChatView: View {
                     }
 
                 Button {
-                    Task { await viewModel.send() }
+                    if viewModel.isStreaming {
+                        viewModel.stopStreaming()
+                    } else {
+                        Task { await viewModel.send() }
+                    }
                 } label: {
                     Image(systemName: viewModel.isStreaming ? "stop.circle.fill" : "arrow.up.circle.fill")
                         .font(.system(size: 24))

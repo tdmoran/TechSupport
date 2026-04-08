@@ -155,7 +155,7 @@ struct SettingsView: View {
             HStack(spacing: Theme.Spacing.small) {
                 Button {
                     if value.wrappedValue > range.lowerBound {
-                        value.wrappedValue -= stepSize(for: range)
+                        value.wrappedValue = max(range.lowerBound, value.wrappedValue - stepSize(for: range))
                     }
                 } label: {
                     Image(systemName: "minus")
@@ -185,7 +185,7 @@ struct SettingsView: View {
 
                 Button {
                     if value.wrappedValue < range.upperBound {
-                        value.wrappedValue += stepSize(for: range)
+                        value.wrappedValue = min(range.upperBound, value.wrappedValue + stepSize(for: range))
                     }
                 } label: {
                     Image(systemName: "plus")

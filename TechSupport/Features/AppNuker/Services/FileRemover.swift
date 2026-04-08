@@ -16,7 +16,8 @@ struct FileRemover {
     /// Allowed root directories for removal. Paths outside these are rejected.
     private static let allowedRoots: [String] = [
         NSHomeDirectory(),
-        "/Library"
+        "/Library",
+        "/Applications"
     ]
 
     /// Validate that a path is safe for removal:

@@ -63,6 +63,7 @@ final class ThemeManager: @unchecked Sendable {
 
 @MainActor
 enum Theme {
+    @MainActor
     enum Colors {
         private static var isDark: Bool { ThemeManager.shared.isDark }
 

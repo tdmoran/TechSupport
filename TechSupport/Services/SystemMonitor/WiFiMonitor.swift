@@ -59,6 +59,7 @@ struct WiFiMonitor: Sendable {
         let bandString: String
         if let channel = iface.wlanChannel() {
             switch channel.channelBand {
+            case .bandUnknown: bandString = "Unknown"
             case .band2GHz: bandString = "2.4 GHz"
             case .band5GHz: bandString = "5 GHz"
             case .band6GHz: bandString = "6 GHz"
@@ -70,12 +71,14 @@ struct WiFiMonitor: Sendable {
 
         let phyString: String
         switch iface.activePHYMode() {
+        case .modeNone: phyString = "—"
         case .mode11a: phyString = "802.11a"
         case .mode11b: phyString = "802.11b"
         case .mode11g: phyString = "802.11g"
         case .mode11n: phyString = "802.11n"
         case .mode11ac: phyString = "802.11ac"
         case .mode11ax: phyString = "Wi-Fi 6"
+        case .mode11be: phyString = "Wi-Fi 7"
         @unknown default: phyString = "Unknown"
         }
 
