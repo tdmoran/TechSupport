@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 import UniformTypeIdentifiers
 
 struct MonitorDashboardView: View {
@@ -14,19 +15,38 @@ struct MonitorDashboardView: View {
     ]
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: Theme.Spacing.xlarge) {
-                systemInfoHeader
-                killAppsButton
-                metricsGrid
-                peripheralsCard
-                exportReportButton
-                quickSettings
-            }
-            .padding(Theme.Spacing.large)
-            .padding(.bottom, Theme.Spacing.xlarge)
+        List {
+            systemInfoHeader
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 0, leading: Theme.Spacing.large, bottom: 0, trailing: Theme.Spacing.large))
+                .listRowBackground(Color.clear)
+            killAppsButton
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: Theme.Spacing.medium, leading: Theme.Spacing.large, bottom: 0, trailing: Theme.Spacing.large))
+                .listRowBackground(Color.clear)
+            metricsGrid
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: Theme.Spacing.medium, leading: Theme.Spacing.large, bottom: 0, trailing: Theme.Spacing.large))
+                .listRowBackground(Color.clear)
+            peripheralsCard
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: Theme.Spacing.medium, leading: Theme.Spacing.large, bottom: 0, trailing: Theme.Spacing.large))
+                .listRowBackground(Color.clear)
+            exportReportButton
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: Theme.Spacing.medium, leading: Theme.Spacing.large, bottom: 0, trailing: Theme.Spacing.large))
+                .listRowBackground(Color.clear)
+            quickSettings
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: Theme.Spacing.medium, leading: Theme.Spacing.large, bottom: Theme.Spacing.xlarge, trailing: Theme.Spacing.large))
+                .listRowBackground(Color.clear)
         }
-        .scrollIndicators(.hidden)
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .onAppear { viewModel.refreshAppLists() }
+        .onReceive(Timer.publish(every: 5, on: .main, in: .common).autoconnect()) { _ in
+            viewModel.refreshAppLists()
+        }
         .sheet(isPresented: $showKillApps) {
             KillAppsView()
                 .frame(width: 420, height: 500)
@@ -227,24 +247,22 @@ struct MonitorDashboardView: View {
             }
 
             // Foreground apps list
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: Theme.Spacing.xxsmall) {
-                    ForEach(apps, id: \.self) { name in
-                        HStack {
-                            Text(name)
-                                .font(.system(size: 10, weight: .medium, design: .monospaced))
-                                .foregroundStyle(Theme.Colors.textSecondary)
-                                .lineLimit(1)
-                            Spacer()
-                            Button {
-                                viewModel.forceQuitApp(named: name)
-                            } label: {
-                                Image(systemName: "xmark")
-                                    .font(.system(size: 8, weight: .bold))
-                                    .foregroundStyle(Theme.Colors.textTertiary)
-                            }
-                            .buttonStyle(.plain)
+            VStack(alignment: .leading, spacing: Theme.Spacing.xxsmall) {
+                ForEach(apps, id: \.self) { name in
+                    HStack {
+                        Text(name)
+                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .foregroundStyle(Theme.Colors.textSecondary)
+                            .lineLimit(1)
+                        Spacer()
+                        Button {
+                            viewModel.forceQuitApp(named: name)
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundStyle(Theme.Colors.textTertiary)
                         }
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -269,24 +287,22 @@ struct MonitorDashboardView: View {
                 .buttonStyle(.plain)
 
                 if showBackgroundApps {
-                    ScrollView(.vertical, showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: Theme.Spacing.xxsmall) {
-                            ForEach(backgroundApps, id: \.self) { name in
-                                HStack {
-                                    Text(name)
-                                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    VStack(alignment: .leading, spacing: Theme.Spacing.xxsmall) {
+                        ForEach(backgroundApps, id: \.self) { name in
+                            HStack {
+                                Text(name)
+                                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                    .foregroundStyle(Theme.Colors.textTertiary)
+                                    .lineLimit(1)
+                                Spacer()
+                                Button {
+                                    viewModel.forceQuitApp(named: name)
+                                } label: {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 8, weight: .bold))
                                         .foregroundStyle(Theme.Colors.textTertiary)
-                                        .lineLimit(1)
-                                    Spacer()
-                                    Button {
-                                        viewModel.forceQuitApp(named: name)
-                                    } label: {
-                                        Image(systemName: "xmark")
-                                            .font(.system(size: 8, weight: .bold))
-                                            .foregroundStyle(Theme.Colors.textTertiary)
-                                    }
-                                    .buttonStyle(.plain)
                                 }
+                                .buttonStyle(.plain)
                             }
                         }
                     }
@@ -609,3 +625,4 @@ struct MonitorDashboardView: View {
         }
     }
 }
+

@@ -154,9 +154,9 @@ struct MainContentView: View {
                     .allowsHitTesting(selectedTab == .monitor)
             }
 
-            AppNukerTabView()
-                .opacity(selectedTab == .appNuker ? 1 : 0)
-                .allowsHitTesting(selectedTab == .appNuker)
+            if selectedTab == .appNuker {
+                AppNukerTabView()
+            }
         }
         .onChange(of: selectedTab) {
             if selectedTab == .claude {

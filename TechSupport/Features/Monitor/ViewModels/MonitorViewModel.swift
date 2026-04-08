@@ -66,19 +66,26 @@ final class MonitorViewModel {
         }
     }
 
-    var runningAppNames: [String] {
-        NSWorkspace.shared.runningApplications
+    private(set) var runningAppNames: [String] = []
+    private(set) var backgroundAppNames: [String] = []
+
+    func refreshAppLists() {
+        let apps = NSWorkspace.shared.runningApplications
+        let newForeground = apps
             .filter { $0.activationPolicy == .regular }
             .compactMap { $0.localizedName }
             .sorted()
-    }
-
-    var backgroundAppNames: [String] {
-        NSWorkspace.shared.runningApplications
+        let newBackground = apps
             .filter { $0.activationPolicy == .accessory || $0.activationPolicy == .prohibited }
             .compactMap { $0.localizedName }
             .filter { !$0.isEmpty }
             .sorted()
+        if newForeground != runningAppNames {
+            runningAppNames = newForeground
+        }
+        if newBackground != backgroundAppNames {
+            backgroundAppNames = newBackground
+        }
     }
 
     func forceQuitApp(named name: String) {
