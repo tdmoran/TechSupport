@@ -13,6 +13,51 @@ struct RemovalResult: Identifiable {
 /// Uses Trash by default (reversible). Falls back to direct removal for sudo items.
 struct FileRemover {
 
+    /// Allowed root directories for removal. Paths outside these are rejected.
+    private static let allowedRoots: [String] = [
+        NSHomeDirectory(),
+        "/Library"
+    ]
+
+    /// Validate that a path is safe for removal:
+    /// - Must not contain path traversal components (..)
+    /// - Must resolve (via realpath) to a location under an allowed root
+    /// - Must not be a symbolic link (TOCTOU mitigation)
+    private static func validatePath(_ url: URL) -> String? {
+        let rawPath = url.path
+
+        // Reject paths with traversal components
+        let components = (rawPath as NSString).pathComponents
+        if components.contains("..") {
+            return "Path contains directory traversal (..)"
+        }
+
+        // Resolve symlinks to get the canonical path
+        let resolved = (rawPath as NSString).resolvingSymlinksInPath
+
+        // Ensure the resolved path is under an allowed root
+        let isUnderAllowedRoot = allowedRoots.contains { root in
+            resolved.hasPrefix(root + "/") || resolved == root
+        }
+        guard isUnderAllowedRoot else {
+            return "Path resolves outside allowed directories: \(resolved)"
+        }
+
+        // Check that the item is not a symbolic link (TOCTOU mitigation)
+        let fm = FileManager.default
+        do {
+            let attrs = try fm.attributesOfItem(atPath: rawPath)
+            if let fileType = attrs[.type] as? FileAttributeType, fileType == .typeSymbolicLink {
+                return "Refusing to remove symbolic link: \(rawPath)"
+            }
+        } catch {
+            // If we can't stat the item, it may have been removed already
+            return "Cannot verify file attributes: \(error.localizedDescription)"
+        }
+
+        return nil
+    }
+
     /// Move a single file or directory to Trash, or sudo-remove if elevated permissions needed.
     static func remove(_ file: FoundFile) -> RemovalResult {
         let fm = FileManager.default
@@ -21,6 +66,11 @@ struct FileRemover {
 
         guard fm.fileExists(atPath: path.path) else {
             return RemovalResult(path: path, success: true, freedBytes: 0, error: nil)
+        }
+
+        // Validate the path is safe before any removal
+        if let validationError = validatePath(path) {
+            return RemovalResult(path: path, success: false, freedBytes: 0, error: validationError)
         }
 
         if file.requiresSudo {
@@ -43,11 +93,18 @@ struct FileRemover {
     /// Remove using elevated permissions via AppleScript.
     /// Uses proper escaping to prevent injection through filenames containing quotes.
     private static func sudoRemove(path: URL, freedBytes: Int64) -> RemovalResult {
+        // Re-validate immediately before removal (TOCTOU mitigation)
+        if let validationError = validatePath(path) {
+            return RemovalResult(path: path, success: false, freedBytes: 0, error: validationError)
+        }
+
         // Escape for the shell layer (single-quote wrapping)
         let shellSafe = path.path.shellEscaped
-        // Escape for the AppleScript string layer (backslash double-quotes)
-        let appleScriptSafe = shellSafe.replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "\"", with: "\\\"")
+        // Escape for the AppleScript string layer:
+        // IMPORTANT: Escape double-quotes FIRST, then backslashes, to prevent
+        // crafted filenames (e.g. foo\"bar) from breaking out of quoting.
+        let appleScriptSafe = shellSafe.replacingOccurrences(of: "\"", with: "\\\"")
+            .replacingOccurrences(of: "\\", with: "\\\\")
 
         let script = "do shell script \"rm -rf \(appleScriptSafe)\" with administrator privileges"
 

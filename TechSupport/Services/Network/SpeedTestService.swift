@@ -49,14 +49,9 @@ actor SpeedTestService {
         // 2. Measure download speed
         let downloadMbps = try await measureDownload()
 
-        try Task.checkCancellation()
-
-        // 3. Measure upload speed
-        let uploadMbps = try await measureUpload()
-
         let result = SpeedTestResult(
             downloadMbps: downloadMbps,
-            uploadMbps: uploadMbps,
+            uploadMbps: nil,
             latencyMs: latency
         )
 
@@ -137,41 +132,4 @@ actor SpeedTestService {
         return mbps
     }
 
-    // MARK: - Upload
-
-    private func measureUpload() async throws -> Double? {
-        // Upload measurement using httpbin.org POST endpoint.
-        // Send a small payload and measure throughput.
-        guard let url = URL(string: "https://httpbin.org/post") else { return nil }
-
-        let config = URLSessionConfiguration.ephemeral
-        config.timeoutIntervalForRequest = 15
-        let session = URLSession(configuration: config)
-        defer { session.invalidateAndCancel() }
-
-        // Create a ~100KB payload
-        let payloadSize = 100_000
-        let payload = Data(repeating: 0x41, count: payloadSize)
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.httpBody = payload
-        request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
-        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
-
-        let start = CFAbsoluteTimeGetCurrent()
-        do {
-            let _ = try await session.data(for: request)
-        } catch {
-            logger.warning("Upload measurement failed: \(error.localizedDescription)")
-            return nil
-        }
-        let elapsed = CFAbsoluteTimeGetCurrent() - start
-        guard elapsed > 0 else { return nil }
-
-        let bytesPerSecond = Double(payloadSize) / elapsed
-        let mbps = (bytesPerSecond * 8) / 1_000_000
-
-        return mbps
-    }
 }

@@ -29,7 +29,7 @@ struct HTTPClient: Sendable {
             urlRequest.httpBody = try JSONEncoder().encode(body)
         }
 
-        logger.debug("HTTP \(method.rawValue) \(url.absoluteString)")
+        logger.debug("HTTP \(method.rawValue) \(url.host ?? "unknown")")
 
         let (data, response) = try await session.data(for: urlRequest)
 
@@ -37,7 +37,7 @@ struct HTTPClient: Sendable {
             throw AppError.apiNetworkError("Invalid response type")
         }
 
-        logger.debug("HTTP \(httpResponse.statusCode) \(url.absoluteString)")
+        logger.debug("HTTP \(httpResponse.statusCode) \(url.host ?? "unknown")")
 
         guard (200...299).contains(httpResponse.statusCode) else {
             let message = String(data: data, encoding: .utf8) ?? "Unknown error"

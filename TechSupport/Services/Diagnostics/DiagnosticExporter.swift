@@ -79,6 +79,39 @@ actor DiagnosticExporter {
             ----------------------------------------
             """)
 
-        return sections.joined(separator: "\n\n")
+        let report = sections.joined(separator: "\n\n")
+        return sanitize(report)
+    }
+
+    // MARK: - Sanitization
+
+    private func sanitize(_ text: String) -> String {
+        var result = text
+
+        // Replace current user's home directory with ~/
+        let homeDir = FileManager.default.homeDirectoryForCurrentUser.path
+        result = result.replacingOccurrences(of: homeDir, with: "~")
+
+        // Replace current username with [user]
+        let username = NSUserName()
+        if !username.isEmpty {
+            result = result.replacingOccurrences(of: username, with: "[user]")
+        }
+
+        // Redact hardware serial numbers (10-17 uppercase alphanumeric, typical Apple serial format)
+        if let serialRegex = try? NSRegularExpression(
+            pattern: "\\b[A-Z0-9]{10,17}\\b",
+            options: []
+        ) {
+            let range = NSRange(result.startIndex..., in: result)
+            result = serialRegex.stringByReplacingMatches(
+                in: result,
+                options: [],
+                range: range,
+                withTemplate: "[SERIAL REDACTED]"
+            )
+        }
+
+        return result
     }
 }

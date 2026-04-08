@@ -4,6 +4,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(UserSettings.self) private var settings
     @State private var launchAtLogin = LaunchAtLoginManager.isEnabled
+    @State private var claudeVersion: String = "Loading…"
     private var themeManager = ThemeManager.shared
 
     var body: some View {
@@ -108,6 +109,9 @@ struct SettingsView: View {
         }
         .background(Theme.Colors.background)
         .preferredColorScheme(themeManager.preferredColorScheme)
+        .task {
+            await loadClaudeVersion()
+        }
     }
 
     // MARK: - Launch at Login
@@ -272,16 +276,29 @@ struct SettingsView: View {
         return 1
     }
 
-    private var claudeVersion: String {
-        let process = Process()
-        let pipe = Pipe()
-        process.executableURL = URL(fileURLWithPath: "/bin/zsh")
-        process.arguments = ["-l", "-c", "claude --version 2>/dev/null || echo 'not found'"]
-        process.standardOutput = pipe
-        process.standardError = pipe
-        try? process.run()
-        process.waitUntilExit()
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        return String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Unknown"
+    private func loadClaudeVersion() async {
+        let version = await Task.detached {
+            let path = TerminalCoordinator.claudePath
+            guard path.hasPrefix("/"),
+                  FileManager.default.isExecutableFile(atPath: path) else {
+                return "Not installed"
+            }
+            let process = Process()
+            let pipe = Pipe()
+            process.executableURL = URL(fileURLWithPath: path)
+            process.arguments = ["--version"]
+            process.standardOutput = pipe
+            process.standardError = pipe
+            do {
+                try process.run()
+                process.waitUntilExit()
+                let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                return String(data: data, encoding: .utf8)?
+                    .trimmingCharacters(in: .whitespacesAndNewlines) ?? "Unknown"
+            } catch {
+                return "Not installed"
+            }
+        }.value
+        claudeVersion = version
     }
 }

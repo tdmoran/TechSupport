@@ -6,12 +6,38 @@ private let logger = Logger(subsystem: "com.techsupport", category: "DiagnosticR
 actor DiagnosticRunner {
     private let allowedCommands: Set<String>
 
+    /// Hardcoded set of approved binary paths. Only binaries in this set may be executed.
+    private static let approvedBinaries: Set<String> = [
+        "/usr/sbin/system_profiler",
+        "/usr/bin/sw_vers",
+        "/usr/bin/uptime",
+        "/bin/df",
+        "/usr/bin/du",
+        "/usr/sbin/networksetup",
+        "/sbin/ping",
+        "/usr/bin/nslookup",
+        "/usr/bin/top",
+        "/usr/bin/log",
+    ]
+
     init() {
         allowedCommands = Set(DiagnosticCatalog.allCommands.map(\.id))
     }
 
     func run(_ command: DiagnosticCommand) async throws -> DiagnosticResult {
         guard allowedCommands.contains(command.id) else {
+            throw AppError.diagnosticCommandNotAllowed(command: command.name)
+        }
+
+        // Require absolute path to prevent PATH-based injection
+        guard command.command.hasPrefix("/") else {
+            logger.error("Rejected non-absolute command path: \(command.command)")
+            throw AppError.diagnosticCommandNotAllowed(command: command.name)
+        }
+
+        // Validate the binary path against the hardcoded allowlist
+        guard Self.approvedBinaries.contains(command.command) else {
+            logger.error("Rejected unapproved binary: \(command.command)")
             throw AppError.diagnosticCommandNotAllowed(command: command.name)
         }
 
