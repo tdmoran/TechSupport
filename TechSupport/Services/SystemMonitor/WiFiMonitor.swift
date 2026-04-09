@@ -78,7 +78,6 @@ struct WiFiMonitor: Sendable {
         case .mode11n: phyString = "802.11n"
         case .mode11ac: phyString = "802.11ac"
         case .mode11ax: phyString = "Wi-Fi 6"
-        case .mode11be: phyString = "Wi-Fi 7"
         @unknown default: phyString = "Unknown"
         }
 

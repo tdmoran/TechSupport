@@ -6,11 +6,11 @@
 	<dict>
 		<key>Resources/SwiftTerm_SwiftTerm.bundle/Contents/Info.plist</key>
 		<data>
-		b8dMSrL2/8YytKSVd6gEbQ+Jo5I=
+		HxssIf12a8twMvc7pOZez5Tolno=
 		</data>
 		<key>Resources/SwiftTerm_SwiftTerm.bundle/Contents/Resources/default.metallib</key>
 		<data>
-		93cggICCYBOxRTQk3jg+zZa/x2c=
+		Y1IJrNYPiAnogh/U9hMvFKJngQs=
 		</data>
 	</dict>
 	<key>files2</key>
@@ -19,35 +19,67 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			5dEPW9Q65J+bVuok25xeejk2KqUNmHFeXyl1Fz6YGOM=
+			U1/GdNBz9fFrpbOxAdgZ2szrf1dU0PfBSNO57GOhGoY=
 			</data>
 		</dict>
 		<key>Extensions/TechSupportWidget.appex/Contents/MacOS/TechSupportWidget</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			X3kzpWdIL9hXjsWlYiFcTj6mofGjGRLa7rAxD5kEI4k=
+			4MHBhHN0lQ0XBZkJtaCMB5euryRruPLIp45eHl5+WIY=
+			</data>
+		</dict>
+		<key>Extensions/TechSupportWidget.appex/Contents/MacOS/TechSupportWidget.debug.dylib</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			vCIrP/fU1yGtbL1kMNcInNjATfg5alPHVXgzTZwSKHQ=
+			</data>
+		</dict>
+		<key>Extensions/TechSupportWidget.appex/Contents/MacOS/__preview.dylib</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			EtU2nk+vsLE7JC2xZMXkUld1Kh9z2UldOvwPObMyctY=
 			</data>
 		</dict>
 		<key>Extensions/TechSupportWidget.appex/Contents/_CodeSignature/CodeResources</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			ZobeEKKKL+EbNsu4bcusyCfPxOoRa02r8YReWu5inps=
+			jisHpnswCh3/U5DmTssfzA6qyIU4qAVGdBxv10MCT5Y=
 			</data>
+		</dict>
+		<key>MacOS/TechSupport.debug.dylib</key>
+		<dict>
+			<key>cdhash</key>
+			<data>
+			uUPiSHZ4y2l92qXwVB2ZHXbd3FY=
+			</data>
+			<key>requirement</key>
+			<string>cdhash H"b943e2487678cb697ddaa5f0541d991d76dddc56"</string>
+		</dict>
+		<key>MacOS/__preview.dylib</key>
+		<dict>
+			<key>cdhash</key>
+			<data>
+			r1PqGLHIWNqUHx5kb+/jK0EvnJI=
+			</data>
+			<key>requirement</key>
+			<string>cdhash H"af53ea18b1c858da941f1e646fefe32b412f9c92"</string>
 		</dict>
 		<key>Resources/SwiftTerm_SwiftTerm.bundle/Contents/Info.plist</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			aeGHplZ6jhfIxf9pGlfnwuQ/V1egwYZxM0WyxJAfYv4=
+			6gVxu3Q4YoOBu2++U02NY0cPATbpU26MQXx7jjALPKU=
 			</data>
 		</dict>
 		<key>Resources/SwiftTerm_SwiftTerm.bundle/Contents/Resources/default.metallib</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			HxC/2I6vlhoqRq/jXcndu97XY15Jv2Fo7jiFhgr5dBY=
+			Ku+UIoSx79ctxt4HKib2Z2gxZKkKLD+hsZm4nBqBUGk=
 			</data>
 		</dict>
 	</dict>

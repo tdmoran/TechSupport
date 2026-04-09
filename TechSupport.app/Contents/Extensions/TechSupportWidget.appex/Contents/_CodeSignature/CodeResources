@@ -5,7 +5,26 @@
 	<key>files</key>
 	<dict/>
 	<key>files2</key>
-	<dict/>
+	<dict>
+		<key>MacOS/TechSupportWidget.debug.dylib</key>
+		<dict>
+			<key>cdhash</key>
+			<data>
+			azCpGRs3fLw9D+WEYx4SWpN/iqU=
+			</data>
+			<key>requirement</key>
+			<string>cdhash H"6b30a9191b377cbc3d0fe584631e125a937f8aa5"</string>
+		</dict>
+		<key>MacOS/__preview.dylib</key>
+		<dict>
+			<key>cdhash</key>
+			<data>
+			Owb2GolY5tdpQAV0rU3LyFi+PcQ=
+			</data>
+			<key>requirement</key>
+			<string>cdhash H"3b06f61a8958e6d769400574ad4dcbc858be3dc4"</string>
+		</dict>
+	</dict>
 	<key>rules</key>
 	<dict>
 		<key>^Resources/</key>
